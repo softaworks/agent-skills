@@ -134,10 +134,10 @@ Clarify ambiguous requirements through systematic dialogue before implementation
 
 ### Professional Skills
 
-#### [professional-effective-communication](skills/professional-effective-communication/README.md)
+#### [professional-communication](skills/professional-communication/README.md)
 Master technical communication for emails, team messaging, meetings, and stakeholder updates.
 
-**[→ Read more](skills/professional-effective-communication/README.md)**
+**[→ Read more](skills/professional-communication/README.md)**
 
 ---
 
