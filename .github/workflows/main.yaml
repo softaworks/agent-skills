@@ -1,4 +1,4 @@
-name: Validate Plugin
+name: CI
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main]
 
+# Skip if commit message contains [skip ci]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

@@ -1,0 +1,72 @@
+name: Auto Bump Version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'agents/**'
+      - 'commands/**'
+
+permissions:
+  contents: write
+
+jobs:
+  detect-and-bump:
+    name: Detect Changes and Bump Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to detect changes
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Detect changes and bump version
+        id: bump
+        run: |
+          # Skip if this is a version bump commit (avoid infinite loop)
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          if [[ "$LAST_COMMIT_MSG" == *"chore: auto-bump"* ]]; then
+            echo "Skipping - last commit was auto-bump"
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Skip if only plugin.json or marketplace.json changed
+          CONTENT_CHANGES=$(git diff --name-only HEAD~1 HEAD -- 'skills/' 'agents/' 'commands/' | grep -v "plugin.json" | grep -v "marketplace.json" | head -1)
+          if [ -z "$CONTENT_CHANGES" ]; then
+            echo "No content changes detected (only metadata files)"
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Content changes detected:"
+          git diff --name-only HEAD~1 HEAD -- 'skills/' 'agents/' 'commands/'
+
+          echo "Bumping version..."
+          python3 scripts/bump_version.py patch
+
+          echo "should_bump=true" >> $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        if: steps.bump.outputs.should_bump == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if there are changes to commit
+          if git diff --quiet; then
+            echo "No version changes to commit"
+            exit 0
+          fi
+
+          # Stage version files
+          git add .claude-plugin/plugin.json
+          git add .claude-plugin/marketplace.json
+
+          git commit -m "chore: auto-bump version [skip ci]"
+          git push
