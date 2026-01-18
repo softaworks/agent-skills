@@ -1,112 +1,234 @@
 # Agent Skills
 
-A collection of skills for AI coding agents. Skills are packaged instructions and scripts that extend agent capabilities.
+A curated collection of skills for AI coding agents. Skills are packaged instructions and scripts that extend agent capabilities across development, documentation, planning, and professional workflows.
 
 Skills follow the [Agent Skills](https://agentskills.io/) format.
 
-## Available Skills
+---
 
-### react-best-practices
+## 📚 Available Skills
 
-React and Next.js performance optimization guidelines from Vercel Engineering. Contains 40+ rules across 8 categories, prioritized by impact.
+### AI Tools & Integrations
 
-**Use when:**
-- Writing new React components or Next.js pages
-- Implementing data fetching (client or server-side)
-- Reviewing code for performance issues
-- Optimizing bundle size or load times
+#### [codex](skills/codex/README.md)
+Use Codex CLI for advanced code analysis, refactoring, and automated editing with GPT-5.2 support.
 
-**Categories covered:**
-- Eliminating waterfalls (Critical)
-- Bundle size optimization (Critical)
-- Server-side performance (High)
-- Client-side data fetching (Medium-High)
-- Re-render optimization (Medium)
-- Rendering performance (Medium)
-- JavaScript micro-optimizations (Low-Medium)
+**[→ Read more](skills/codex/README.md)**
 
-### web-design-guidelines
+#### [gemini](skills/gemini/README.md)
+Leverage Gemini CLI for large-scale code review and analysis with 200k+ context windows.
 
-Review UI code for compliance with web interface best practices. Audits your code for 100+ rules covering accessibility, performance, and UX.
+**[→ Read more](skills/gemini/README.md)**
 
-**Use when:**
-- "Review my UI"
-- "Check accessibility"
-- "Audit design"
-- "Review UX"
-- "Check my site against best practices"
+#### [perplexity](skills/perplexity/README.md)
+Search the web and ask questions using Perplexity AI for up-to-date information and research.
 
-**Categories covered:**
-- Accessibility (aria-labels, semantic HTML, keyboard handlers)
-- Focus States (visible focus, focus-visible patterns)
-- Forms (autocomplete, validation, error handling)
-- Animation (prefers-reduced-motion, compositor-friendly transforms)
-- Typography (curly quotes, ellipsis, tabular-nums)
-- Images (dimensions, lazy loading, alt text)
-- Performance (virtualization, layout thrashing, preconnect)
-- Navigation & State (URL reflects state, deep-linking)
-- Dark Mode & Theming (color-scheme, theme-color meta)
-- Touch & Interaction (touch-action, tap-highlight)
-- Locale & i18n (Intl.DateTimeFormat, Intl.NumberFormat)
+**[→ Read more](skills/perplexity/README.md)**
 
-### vercel-deploy-claimable
+---
 
-Deploy applications and websites to Vercel instantly. Designed for use with claude.ai and Claude Desktop to enable deployments directly from conversations. Deployments are "claimable" - users can transfer ownership to their own Vercel account.
+### Documentation & Diagrams
 
-**Use when:**
-- "Deploy my app"
-- "Deploy this to production"
-- "Push this live"
-- "Deploy and give me the link"
+#### [backend-to-frontend-handoff-docs](skills/backend-to-frontend-handoff-docs/README.md)
+Create comprehensive API handoff documentation for frontend developers after backend implementation.
 
-**Features:**
-- Auto-detects 40+ frameworks from `package.json`
-- Returns preview URL (live site) and claim URL (transfer ownership)
-- Handles static HTML projects automatically
-- Excludes `node_modules` and `.git` from uploads
+**[→ Read more](skills/backend-to-frontend-handoff-docs/README.md)**
 
-**How it works:**
-1. Packages your project into a tarball
-2. Detects framework (Next.js, Vite, Astro, etc.)
-3. Uploads to deployment service
-4. Returns preview URL and claim URL
+#### [frontend-to-backend-requirements](skills/frontend-to-backend-requirements/README.md)
+Document frontend data needs and API requirements for backend developers without dictating implementation.
 
-**Output:**
-```
-Deployment successful!
+**[→ Read more](skills/frontend-to-backend-requirements/README.md)**
 
-Preview URL: https://skill-deploy-abc123.vercel.app
-Claim URL:   https://vercel.com/claim-deployment?code=...
-```
+#### [c4-architecture](skills/c4-architecture/README.md)
+Generate C4 architecture diagrams (Context, Container, Component, Deployment) using Mermaid syntax.
 
-## Installation
+**[→ Read more](skills/c4-architecture/README.md)**
+
+#### [draw-io](skills/draw-io/README.md)
+Create, edit, and convert draw.io diagrams with AWS icons, proper layouts, and PNG exports.
+
+**[→ Read more](skills/draw-io/README.md)**
+
+#### [excalidraw](skills/excalidraw/README.md)
+Work with Excalidraw diagrams efficiently by delegating to specialized sub-agents to avoid token bloat.
+
+**[→ Read more](skills/excalidraw/README.md)**
+
+#### [marp-slide](skills/marp-slide/README.md)
+Create professional presentation slides using Marp with 7 beautiful themes and automatic quality enhancement.
+
+**[→ Read more](skills/marp-slide/README.md)**
+
+#### [mermaid-diagrams](skills/mermaid-diagrams/README.md)
+Create software diagrams using Mermaid: flowcharts, sequence diagrams, class diagrams, ERDs, and more.
+
+**[→ Read more](skills/mermaid-diagrams/README.md)**
+
+---
+
+### Development Tools
+
+#### [command-creator](skills/command-creator/README.md)
+Create optimized Claude Code slash commands with proper structure, validation, and best practices.
+
+**[→ Read more](skills/command-creator/README.md)**
+
+#### [session-handoff](skills/session-handoff/README.md)
+Create comprehensive handoff documents for seamless AI agent session transfers and continuity.
+
+**[→ Read more](skills/session-handoff/README.md)**
+
+#### [reducing-entropy](skills/reducing-entropy/README.md)
+Minimize total codebase size through aggressive deletion and simplification. Manual activation only.
+
+**[→ Read more](skills/reducing-entropy/README.md)**
+
+---
+
+### Design & Frontend
+
+#### [design-system-starter](skills/design-system-starter/README.md)
+Bootstrap complete design systems with design tokens, component architecture, and accessibility guidelines.
+
+**[→ Read more](skills/design-system-starter/README.md)**
+
+#### [openapi-to-typescript](skills/openapi-to-typescript/README.md)
+Convert OpenAPI 3.0 specifications to TypeScript interfaces and runtime type guards.
+
+**[→ Read more](skills/openapi-to-typescript/README.md)**
+
+---
+
+### Utilities
+
+#### [domain-name-brainstormer](skills/domain-name-brainstormer/README.md)
+Generate creative domain name ideas and check availability across multiple TLDs (.com, .io, .dev, .ai).
+
+**[→ Read more](skills/domain-name-brainstormer/README.md)**
+
+#### [meme-factory](skills/meme-factory/README.md)
+Generate memes using memegen.link API with 100+ popular templates for social media and presentations.
+
+**[→ Read more](skills/meme-factory/README.md)**
+
+#### [web-to-markdown](skills/web-to-markdown/README.md)
+Convert webpages to clean Markdown using Puppeteer and Readability for JavaScript-rendered content.
+
+**[→ Read more](skills/web-to-markdown/README.md)**
+
+---
+
+### Planning & Strategy
+
+#### [game-changing-features](skills/game-changing-features/README.md)
+Find 10x product opportunities and high-leverage improvements through strategic thinking frameworks.
+
+**[→ Read more](skills/game-changing-features/README.md)**
+
+#### [requirements-clarity](skills/requirements-clarity/README.md)
+Clarify ambiguous requirements through systematic dialogue before implementation begins.
+
+**[→ Read more](skills/requirements-clarity/README.md)**
+
+---
+
+### Professional Skills
+
+#### [professional-effective-communication](skills/professional-effective-communication/README.md)
+Master technical communication for emails, team messaging, meetings, and stakeholder updates.
+
+**[→ Read more](skills/professional-effective-communication/README.md)**
+
+---
+
+### Testing & Quality
+
+#### [qa-test-planner](skills/qa-test-planner/README.md)
+Generate comprehensive test plans, manual test cases, regression suites, and bug reports for QA engineers.
+
+**[→ Read more](skills/qa-test-planner/README.md)**
+
+---
+
+### Git Workflow
+
+#### [commit-work](skills/commit-work/README.md)
+Create high-quality git commits with smart splitting, Conventional Commits format, and clear messages.
+
+**[→ Read more](skills/commit-work/README.md)**
+
+---
+
+## 🚀 Installation
+
+### For Claude Code
 
 ```bash
-npx add-skill vercel-labs/agent-skills
+# Install via plugin (recommended)
+/plugin install agent-skills@leonardocouy
+
+# Or copy individual skills
+cp -r skills/<skill-name> ~/.claude/skills/
 ```
 
-## Usage
+### For claude.ai
 
-Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
+Add skills to project knowledge or paste SKILL.md contents into the conversation.
 
-**Examples:**
-```
-Deploy my app
-```
-```
-Review this React component for performance issues
-```
-```
-Help me optimize this Next.js page
-```
+---
 
-## Skill Structure
+## 💡 Usage
+
+Skills are automatically activated when relevant tasks are detected. Each skill includes trigger phrases and usage examples in its README.
+
+**Example workflows:**
+
+```
+Create a sequence diagram showing the authentication flow
+```
+→ Activates `mermaid-diagrams` skill
+
+```
+I need to commit these changes with a good message
+```
+→ Activates `commit-work` skill
+
+```
+Generate creative domain names for my SaaS project
+```
+→ Activates `domain-name-brainstormer` skill
+
+---
+
+## 📖 Skill Structure
 
 Each skill contains:
-- `SKILL.md` - Instructions for the agent
+- `SKILL.md` - Detailed instructions for the agent (with YAML frontmatter)
+- `README.md` - User-friendly documentation with examples
 - `scripts/` - Helper scripts for automation (optional)
 - `references/` - Supporting documentation (optional)
 
-## License
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! When adding new skills:
+
+1. Follow the [Agent Skills](https://agentskills.io/) format
+2. Include both `SKILL.md` (for agents) and `README.md` (for users)
+3. Add YAML frontmatter to `SKILL.md` with `name:` and `description:` fields
+4. Update this README.md with a link to your skill
+
+---
+
+## 📄 License
 
 MIT
+
+---
+
+## 🔗 Links
+
+- [Agent Skills Format](https://agentskills.io/)
+- [Claude Code Documentation](https://docs.anthropic.com/claude/docs)
+- [GitHub Repository](https://github.com/leonardocouy/agent-skills)
