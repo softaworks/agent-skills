@@ -5,14 +5,14 @@
     "url": "https://github.com/leonardocouy"
   },
   "description": "Collection of skills for AI coding agents following the Agent Skills format",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "pluginRoot": ".",
   "plugins": [
     {
       "name": "agent-skills",
       "source": ".",
       "description": "Skills for AI coding agents following the Agent Skills format from agentskills.io",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": {
         "name": "Leonardo Couy",
         "url": "https://github.com/leonardocouy"
