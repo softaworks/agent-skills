@@ -29,6 +29,9 @@ jobs:
           # Copy new version
           cp -r /tmp/cc-datadog/skills/datadog-cli skills/
 
+          # Copy README.md from root to skill directory
+          cp /tmp/cc-datadog/README.md skills/datadog-cli/
+
           echo "✅ Copied datadog-cli from cc-datadog"
 
       - name: Check for changes

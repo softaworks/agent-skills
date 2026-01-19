@@ -29,6 +29,9 @@ jobs:
           # Copy new version
           cp -r /tmp/gepetto/skills/gepetto skills/
 
+          # Copy README.md from root to skill directory
+          cp /tmp/gepetto/README.md skills/gepetto/
+
           echo "✅ Copied gepetto from softaworks/gepetto"
 
       - name: Check for changes
