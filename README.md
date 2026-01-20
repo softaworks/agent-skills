@@ -35,7 +35,7 @@ Run the following command in Claude Code:
 **Option 1: Via Browse UI**
 
 1. Select **Browse and install plugins**
-2. Select **agent-skills**
+2. Select **agent-toolkit**
 3. Select the plugin(s) you want to install
 4. Select **Install now**
 
@@ -43,14 +43,14 @@ Run the following command in Claude Code:
 
 ```bash
 # Install specific skill
-/plugin install codex@agent-skills
-/plugin install humanizer@agent-skills
+/plugin install codex@agent-toolkit
+/plugin install humanizer@agent-toolkit
 
 # Install specific agent
-/plugin install agent-codebase-pattern-finder@agent-skills
+/plugin install agent-codebase-pattern-finder@agent-toolkit
 
 # Install specific command
-/plugin install command-codex-plan@agent-skills
+/plugin install command-codex-plan@agent-toolkit
 ```
 
 **Option 3: Ask the Agent**
@@ -64,8 +64,8 @@ Simply tell Claude Code:
 Each skill, agent, and command is an individual plugin that can be installed separately:
 
 - **Skills** → See [Available Skills](#-available-skills) for the full list
-- **Agents** → See [Agents](#agents) (install as `agent-<name>@agent-skills`)
-- **Commands** → See [Slash Commands](#slash-commands) (install as `command-<name>@agent-skills`)
+- **Agents** → See [Agents](#agents) (install as `agent-<name>@agent-toolkit`)
+- **Commands** → See [Slash Commands](#slash-commands) (install as `command-<name>@agent-toolkit`)
 
 ### Update Plugins
 
@@ -73,7 +73,7 @@ To update plugins to the latest version:
 
 1. Run `/plugin` in Claude Code
 2. Switch to **Marketplaces** tab
-3. Select **agent-skills**
+3. Select **agent-toolkit**
 4. Choose **Update marketplace**
 
 You can also **Enable auto-update** to get the latest versions automatically.
@@ -144,7 +144,7 @@ Add skills to project knowledge or paste SKILL.md contents into the conversation
 > For full access, add the marketplace and install plugins:
 > ```bash
 > /plugin marketplace add softaworks/agent-skills
-> /plugin install codex@agent-skills
+> /plugin install codex@agent-toolkit
 > ```
 
 ### Agents
