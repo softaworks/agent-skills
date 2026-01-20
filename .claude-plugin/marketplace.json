@@ -1,35 +1,472 @@
 {
-  "name": "skills-collection",
+  "name": "agent-skills",
   "owner": {
     "name": "softaworks",
     "url": "https://github.com/softaworks"
   },
   "metadata": {
-    "description": "Skills, agents, and commands for AI coding agents",
-    "version": "1.0.14"
+    "description": "Skills, agents, and commands for AI coding agents - individually selectable",
+    "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "agent-skills",
-      "source": ".",
-      "description": "Skills for AI coding agents following the Agent Skills format from agentskills.io",
-      "version": "1.0.15",
-      "author": {
-        "name": "Leonardo Couy",
-        "url": "https://github.com/leonardocouy"
-      },
-      "license": "MIT",
-      "repository": "https://github.com/softaworks/agent-skills",
-      "keywords": [
-        "agent",
-        "skills",
-        "claude",
-        "ai",
-        "coding",
-        "automation"
-      ],
-      "category": "productivity"
+      "name": "codex",
+      "description": "Use when the user asks to run Codex CLI (codex exec, codex resume) or references OpenAI Codex for code analysis, refactoring, or automated editing. Uses GPT-5.2 by default for state-of-the-art software engineering.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/codex"],
+      "category": "ai-tools",
+      "keywords": ["ai", "code-analysis", "gpt", "codex", "openai"]
+    },
+    {
+      "name": "gemini",
+      "description": "Use when the user asks to run Gemini CLI for code review, plan review, or big context (>200k) processing. Ideal for comprehensive analysis requiring large context windows. Uses Gemini 3 Pro by default for state-of-the-art reasoning and coding.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/gemini"],
+      "category": "ai-tools",
+      "keywords": ["ai", "code-review", "large-context", "gemini", "google"]
+    },
+    {
+      "name": "perplexity",
+      "description": "Web search and research using Perplexity AI. Use when user says 'search', 'find', 'look up', 'ask', 'research', or 'what's the latest' for generic queries.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/perplexity"],
+      "category": "ai-tools",
+      "keywords": ["ai", "search", "research", "perplexity"]
+    },
+    {
+      "name": "agent-md-refactor",
+      "description": "Refactor bloated AGENTS.md, CLAUDE.md, or similar agent instruction files to follow progressive disclosure principles. Splits monolithic files into organized, linked documentation.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/agent-md-refactor"],
+      "category": "meta",
+      "keywords": ["meta", "refactor", "claude-md", "agents-md", "documentation"]
+    },
+    {
+      "name": "command-creator",
+      "description": "Create Claude Code slash commands. Use when users ask to 'create a command', 'make a slash command', 'add a command', or want to document a workflow as a reusable command.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/command-creator"],
+      "category": "meta",
+      "keywords": ["meta", "commands", "slash-commands", "claude-code"]
+    },
+    {
+      "name": "plugin-forge",
+      "description": "Create and manage Claude Code plugins with proper structure, manifests, and marketplace integration. Use when creating plugins for a marketplace, adding plugin components (commands, agents, hooks), bumping plugin versions, or working with plugin.json/marketplace.json manifests.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/plugin-forge"],
+      "category": "meta",
+      "keywords": ["meta", "plugins", "marketplace", "claude-code"]
+    },
+    {
+      "name": "skill-judge",
+      "description": "Evaluate Agent Skill design quality against official specifications and best practices. Use when reviewing, auditing, or improving SKILL.md files and skill packages.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/skill-judge"],
+      "category": "meta",
+      "keywords": ["meta", "skills", "quality", "review"]
+    },
+    {
+      "name": "backend-to-frontend-handoff-docs",
+      "description": "Create API handoff documentation for frontend developers. Use when backend work is complete and needs to be documented for frontend integration.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/backend-to-frontend-handoff-docs"],
+      "category": "documentation",
+      "keywords": ["documentation", "api", "handoff", "frontend", "backend"]
+    },
+    {
+      "name": "c4-architecture",
+      "description": "Generate architecture documentation using C4 model Mermaid diagrams. Use when asked to create architecture diagrams, document system architecture, visualize software structure.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/c4-architecture"],
+      "category": "documentation",
+      "keywords": ["documentation", "architecture", "c4", "mermaid", "diagrams"]
+    },
+    {
+      "name": "crafting-effective-readmes",
+      "description": "Use when writing or improving README files. Provides templates and guidance matched to your audience and project type.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/crafting-effective-readmes"],
+      "category": "documentation",
+      "keywords": ["documentation", "readme", "writing"]
+    },
+    {
+      "name": "draw-io",
+      "description": "draw.io diagram creation, editing, and review. Use for .drawio XML editing, PNG conversion, layout adjustment, and AWS icon usage.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/draw-io"],
+      "category": "documentation",
+      "keywords": ["documentation", "diagrams", "draw-io", "xml"]
+    },
+    {
+      "name": "excalidraw",
+      "description": "Use when working with *.excalidraw or *.excalidraw.json files, user mentions diagrams/flowcharts, or requests architecture visualization.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/excalidraw"],
+      "category": "documentation",
+      "keywords": ["documentation", "diagrams", "excalidraw", "visualization"]
+    },
+    {
+      "name": "frontend-to-backend-requirements",
+      "description": "Document frontend data needs for backend developers. Use when frontend needs to communicate API requirements to backend.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/frontend-to-backend-requirements"],
+      "category": "documentation",
+      "keywords": ["documentation", "api", "requirements", "frontend", "backend"]
+    },
+    {
+      "name": "marp-slide",
+      "description": "Create professional Marp presentation slides with 7 beautiful themes. Use when users request slide creation, presentations, or Marp documents.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/marp-slide"],
+      "category": "documentation",
+      "keywords": ["documentation", "presentations", "slides", "marp"]
+    },
+    {
+      "name": "mermaid-diagrams",
+      "description": "Comprehensive guide for creating software diagrams using Mermaid syntax. Use when users need to create, visualize, or document software through diagrams.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/mermaid-diagrams"],
+      "category": "documentation",
+      "keywords": ["documentation", "diagrams", "mermaid", "visualization"]
+    },
+    {
+      "name": "writing-clearly-and-concisely",
+      "description": "Use when writing prose humans will read—documentation, commit messages, error messages, explanations, reports, or UI text.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/writing-clearly-and-concisely"],
+      "category": "documentation",
+      "keywords": ["documentation", "writing", "communication"]
+    },
+    {
+      "name": "design-system-starter",
+      "description": "Create and evolve design systems with design tokens, component architecture, accessibility guidelines, and documentation templates.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/design-system-starter"],
+      "category": "design-frontend",
+      "keywords": ["design", "frontend", "design-system", "tokens", "accessibility"]
+    },
+    {
+      "name": "mui",
+      "description": "Material-UI v7 component library patterns including sx prop styling, theme integration, responsive design, and MUI-specific hooks.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/mui"],
+      "category": "design-frontend",
+      "keywords": ["design", "frontend", "mui", "material-ui", "react"]
+    },
+    {
+      "name": "openapi-to-typescript",
+      "description": "Converts OpenAPI 3.0 JSON/YAML to TypeScript interfaces and type guards. Use when generating types from OpenAPI or creating API interfaces.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/openapi-to-typescript"],
+      "category": "design-frontend",
+      "keywords": ["design", "frontend", "openapi", "typescript", "api"]
+    },
+    {
+      "name": "react-dev",
+      "description": "Build React components with TypeScript. Covers type-safe patterns for React 18-19 including generic components, proper event typing, and routing integration.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/react-dev"],
+      "category": "design-frontend",
+      "keywords": ["design", "frontend", "react", "typescript"]
+    },
+    {
+      "name": "database-schema-designer",
+      "description": "Design robust, scalable database schemas for SQL and NoSQL databases. Provides normalization guidelines, indexing strategies, migration patterns.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/database-schema-designer"],
+      "category": "development",
+      "keywords": ["development", "database", "schema", "sql", "nosql"]
+    },
+    {
+      "name": "dependency-updater",
+      "description": "Smart dependency management for any language. Auto-detects project type, applies safe updates automatically, prompts for major versions.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/dependency-updater"],
+      "category": "development",
+      "keywords": ["development", "dependencies", "updates", "npm", "pip"]
+    },
+    {
+      "name": "naming-analyzer",
+      "description": "Suggest better variable, function, and class names based on context and conventions.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/naming-analyzer"],
+      "category": "development",
+      "keywords": ["development", "naming", "refactoring", "code-quality"]
+    },
+    {
+      "name": "reducing-entropy",
+      "description": "Manual-only skill for minimizing total codebase size. Only activate when explicitly requested. Measures success by final code amount.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/reducing-entropy"],
+      "category": "development",
+      "keywords": ["development", "refactoring", "cleanup", "code-size"]
+    },
+    {
+      "name": "session-handoff",
+      "description": "Creates comprehensive handoff documents for seamless AI agent session transfers. Use when context window approaches capacity or work session is ending.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/session-handoff"],
+      "category": "development",
+      "keywords": ["development", "handoff", "context", "session"]
+    },
+    {
+      "name": "game-changing-features",
+      "description": "Find 10x product opportunities and high-leverage improvements. Use when user wants strategic product thinking or wants to find high-impact features.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/game-changing-features"],
+      "category": "planning",
+      "keywords": ["planning", "product", "strategy", "features"]
+    },
+    {
+      "name": "gepetto",
+      "description": "Creates detailed, sectionized implementation plans through research, stakeholder interviews, and multi-LLM review. Use when planning features that need thorough pre-implementation analysis.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/gepetto"],
+      "category": "planning",
+      "keywords": ["planning", "implementation", "analysis", "research"]
+    },
+    {
+      "name": "requirements-clarity",
+      "description": "Clarify ambiguous requirements through focused dialogue before implementation. Use when requirements are unclear or features are complex.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/requirements-clarity"],
+      "category": "planning",
+      "keywords": ["planning", "requirements", "clarity", "communication"]
+    },
+    {
+      "name": "ship-learn-next",
+      "description": "Transform learning content (like YouTube transcripts, articles, tutorials) into actionable implementation plans using the Ship-Learn-Next framework.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/ship-learn-next"],
+      "category": "planning",
+      "keywords": ["planning", "learning", "implementation", "action-items"]
+    },
+    {
+      "name": "difficult-workplace-conversations",
+      "description": "Structured approach to workplace conflicts, performance discussions, and challenging feedback using preparation-delivery-followup framework.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/difficult-workplace-conversations"],
+      "category": "professional",
+      "keywords": ["professional", "communication", "feedback", "conflict"]
+    },
+    {
+      "name": "feedback-mastery",
+      "description": "Navigate difficult conversations and deliver constructive feedback using structured frameworks. Covers the Preparation-Delivery-Follow-up model and Situation-Behavior-Impact (SBI) technique.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/feedback-mastery"],
+      "category": "professional",
+      "keywords": ["professional", "feedback", "communication", "sbi"]
+    },
+    {
+      "name": "professional-communication",
+      "description": "Guide technical communication for software developers. Covers email structure, team messaging etiquette, meeting agendas, and adapting messages for technical vs non-technical audiences.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/professional-communication"],
+      "category": "professional",
+      "keywords": ["professional", "communication", "email", "meetings"]
+    },
+    {
+      "name": "qa-test-planner",
+      "description": "Generate comprehensive test plans, manual test cases, regression test suites, and bug reports for QA engineers.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/qa-test-planner"],
+      "category": "testing",
+      "keywords": ["testing", "qa", "test-plans", "regression"]
+    },
+    {
+      "name": "commit-work",
+      "description": "Create high-quality git commits: review/stage intended changes, split into logical commits, and write clear commit messages (including Conventional Commits).",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/commit-work"],
+      "category": "git",
+      "keywords": ["git", "commits", "conventional-commits"]
+    },
+    {
+      "name": "datadog-cli",
+      "description": "Datadog CLI for searching logs, querying metrics, tracing requests, and managing dashboards. Use when debugging production issues or working with Datadog observability.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/datadog-cli"],
+      "category": "utilities",
+      "keywords": ["utilities", "datadog", "logging", "metrics", "observability"]
+    },
+    {
+      "name": "domain-name-brainstormer",
+      "description": "Generates creative domain name ideas for your project and checks availability across multiple TLDs (.com, .io, .dev, .ai, etc.).",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/domain-name-brainstormer"],
+      "category": "utilities",
+      "keywords": ["utilities", "domains", "naming", "brainstorming"]
+    },
+    {
+      "name": "humanizer",
+      "description": "Remove signs of AI-generated writing from text. Use when editing or reviewing text to make it sound more natural and human-written.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/humanizer"],
+      "category": "utilities",
+      "keywords": ["utilities", "writing", "ai-detection", "editing"]
+    },
+    {
+      "name": "meme-factory",
+      "description": "Generate memes using the memegen.link API. Use when users request memes, want to add humor to content, or need visual aids for social media.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/meme-factory"],
+      "category": "utilities",
+      "keywords": ["utilities", "memes", "images", "social-media"]
+    },
+    {
+      "name": "web-to-markdown",
+      "description": "Converts webpage URLs to clean Markdown by calling the local web2md CLI (Puppeteer + Readability), suitable for JS-rendered pages.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/web-to-markdown"],
+      "category": "utilities",
+      "keywords": ["utilities", "web", "markdown", "conversion"]
+    },
+    {
+      "name": "agent-ascii-ui-mockup-generator",
+      "description": "Visualize UI concepts through ASCII mockups before implementation. Creates multiple ASCII mockup variations for dashboard layouts, forms, and other UI components.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/ascii-ui-mockup-generator.md"],
+      "category": "agents",
+      "keywords": ["agents", "ui", "mockups", "ascii", "visualization"]
+    },
+    {
+      "name": "agent-codebase-pattern-finder",
+      "description": "Find similar implementations, usage examples, or existing patterns in the codebase. Provides concrete code examples based on what you're looking for.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/codebase-pattern-finder.md"],
+      "category": "agents",
+      "keywords": ["agents", "codebase", "patterns", "search"]
+    },
+    {
+      "name": "agent-communication-excellence-coach",
+      "description": "Review communication drafts or prepare difficult conversations. Provides email refinement, tone calibration, roleplay practice, and presentation feedback.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/communication-excellence-coach.md"],
+      "category": "agents",
+      "keywords": ["agents", "communication", "email", "coaching"]
+    },
+    {
+      "name": "agent-general-purpose",
+      "description": "Default agent for handling complex, multi-step tasks with automatic delegation capabilities.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/general-purpose.md"],
+      "category": "agents",
+      "keywords": ["agents", "general", "delegation", "tasks"]
+    },
+    {
+      "name": "agent-mermaid-diagram-specialist",
+      "description": "Mermaid diagram specialist for creating flowcharts, sequence diagrams, ERDs, and architecture visualizations.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/mermaid-diagram-specialist.md"],
+      "category": "agents",
+      "keywords": ["agents", "mermaid", "diagrams", "visualization"]
+    },
+    {
+      "name": "agent-ui-ux-designer",
+      "description": "Expert UI/UX design critic and advisor who provides research-backed, opinionated feedback on interfaces. Pushes back on bad ideas and cites sources.",
+      "source": "./",
+      "strict": false,
+      "agents": ["./agents/ui-ux-designer.md"],
+      "category": "agents",
+      "keywords": ["agents", "ui", "ux", "design", "feedback"]
+    },
+    {
+      "name": "command-codex-plan",
+      "description": "Create a detailed implementation plan using Codex 5.2 with high reasoning.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/codex-plan.md"],
+      "category": "commands",
+      "keywords": ["commands", "planning", "codex", "implementation"]
+    },
+    {
+      "name": "command-compose-email",
+      "description": "Draft a professional email using the What-Why-How framework. Use when composing emails to colleagues, stakeholders, or leadership.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/compose-email.md"],
+      "category": "commands",
+      "keywords": ["commands", "email", "communication", "professional"]
+    },
+    {
+      "name": "command-explain-changes-mental-model",
+      "description": "Build a mental model of changes by splitting them into smaller logical chunks.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/explain-changes-mental-model.md"],
+      "category": "commands",
+      "keywords": ["commands", "code-review", "understanding", "mental-model"]
+    },
+    {
+      "name": "command-explain-pr-changes",
+      "description": "Generate comprehensive markdown summary of pull request changes with visual impact analysis.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/explain-pr-changes.md"],
+      "category": "commands",
+      "keywords": ["commands", "git", "pull-requests", "documentation"]
+    },
+    {
+      "name": "command-sync-branch",
+      "description": "Sync feature branch with the latest main branch.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/sync-branch.md"],
+      "category": "commands",
+      "keywords": ["commands", "git", "branches", "sync"]
+    },
+    {
+      "name": "command-sync-skills-readme",
+      "description": "Sync root README.md with current skills inventory from skills/ directory.",
+      "source": "./",
+      "strict": false,
+      "commands": ["./commands/sync-skills-readme.md"],
+      "category": "commands",
+      "keywords": ["commands", "readme", "sync", "documentation"]
     }
-  ],
-  "version": "1.0.15"
+  ]
 }

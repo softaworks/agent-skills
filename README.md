@@ -62,10 +62,10 @@ Skills follow the [Agent Skills](https://agentskills.io/) format.
 
 > **Requires [Claude Code CLI](https://docs.anthropic.com/claude-code)** — These agents and commands are exclusive to Claude Code users.
 >
-> For full access, add the marketplace and install the plugin:
+> For full access, add the marketplace and install plugins:
 > ```bash
 > /plugin marketplace add softaworks/agent-skills
-> /plugin install agent-skills@skills-collection
+> /plugin install codex@agent-skills
 > ```
 
 ### Agents
@@ -98,25 +98,71 @@ Reusable workflows invoked with `/command-name`:
 
 ## 🚀 Installation
 
-### Recommended: Universal Installation (Works with all AI agents)
+### Quick Install (Recommended)
 
 ```bash
 npx add-skill softaworks/agent-skills
 ```
 
-This method works with multiple AI coding agents:
-- ✅ **Claude Code** - Full plugin support
-- ✅ **Codex** - Compatible with skill format
-- ✅ **Cursor** - Works with agent skills
-- ✅ **Other Agent-based tools** - Universal compatibility
+This method works with multiple AI coding agents (Claude Code, Codex, Cursor, etc.)
 
-### Alternative Methods
+### Register as Plugin Marketplace
 
-**For Claude Code (Plugin)** — Recommended for full access to agents & commands
+Run the following command in Claude Code:
+
 ```bash
 /plugin marketplace add softaworks/agent-skills
-/plugin install agent-skills@skills-collection
 ```
+
+### Install Plugins
+
+**Option 1: Via Browse UI**
+
+1. Select **Browse and install plugins**
+2. Select **agent-skills**
+3. Select the plugin(s) you want to install
+4. Select **Install now**
+
+**Option 2: Direct Install**
+
+```bash
+# Install specific skill
+/plugin install codex@agent-skills
+/plugin install humanizer@agent-skills
+
+# Install specific agent
+/plugin install agent-codebase-pattern-finder@agent-skills
+
+# Install specific command
+/plugin install command-codex-plan@agent-skills
+```
+
+**Option 3: Ask the Agent**
+
+Simply tell Claude Code:
+
+> Please install Skills from github.com/softaworks/agent-skills
+
+### Available Plugins
+
+Each skill, agent, and command is an individual plugin that can be installed separately:
+
+- **Skills** → See [Available Skills](#-available-skills) for the full list
+- **Agents** → See [Agents](#agents) (install as `agent-<name>@agent-skills`)
+- **Commands** → See [Slash Commands](#slash-commands) (install as `command-<name>@agent-skills`)
+
+### Update Plugins
+
+To update plugins to the latest version:
+
+1. Run `/plugin` in Claude Code
+2. Switch to **Marketplaces** tab
+3. Select **agent-skills**
+4. Choose **Update marketplace**
+
+You can also **Enable auto-update** to get the latest versions automatically.
+
+### Manual Installation
 
 **For Claude Code (Manual)** — Skills only
 ```bash

@@ -60,46 +60,31 @@ def save_json(path: Path, data: dict) -> None:
 
 
 def bump_plugin_version(bump_type: str) -> None:
-    """Bump the version in both plugin.json and marketplace.json."""
+    """Bump the version in marketplace.json."""
     root = get_root()
 
-    # Paths
-    plugin_json_path = root / ".claude-plugin" / "plugin.json"
+    # Path
     marketplace_path = root / ".claude-plugin" / "marketplace.json"
-
-    # Validate files exist
-    if not plugin_json_path.exists():
-        print(f"✗ plugin.json not found at {plugin_json_path}")
-        sys.exit(1)
 
     if not marketplace_path.exists():
         print(f"✗ marketplace.json not found at {marketplace_path}")
         sys.exit(1)
 
-    # Load files
-    plugin_json = load_json(plugin_json_path)
+    # Load file
     marketplace = load_json(marketplace_path)
 
-    # Get current version
-    current_version = plugin_json.get("version", "1.0.0")
+    # Get current version from metadata
+    current_version = marketplace.get("metadata", {}).get("version", "1.0.0")
     new_version = bump_version(current_version, bump_type)
 
     print(f"Bumping agent-skills: {current_version} → {new_version}")
 
-    # Update plugin.json
-    plugin_json["version"] = new_version
-    save_json(plugin_json_path, plugin_json)
-    print(f"✓ Updated {plugin_json_path}")
-
-    # Update marketplace.json (first plugin in array)
-    if marketplace.get("plugins") and len(marketplace["plugins"]) > 0:
-        marketplace["plugins"][0]["version"] = new_version
-        marketplace["version"] = new_version  # Also bump marketplace version
-        save_json(marketplace_path, marketplace)
-        print(f"✓ Updated {marketplace_path}")
-    else:
-        print(f"✗ No plugins found in marketplace.json")
-        sys.exit(1)
+    # Update marketplace.json metadata version
+    if "metadata" not in marketplace:
+        marketplace["metadata"] = {}
+    marketplace["metadata"]["version"] = new_version
+    save_json(marketplace_path, marketplace)
+    print(f"✓ Updated {marketplace_path}")
 
     print(f"\n🎉 Version bumped successfully!")
     print(f"\nNext steps:")
@@ -111,14 +96,14 @@ def bump_plugin_version(bump_type: str) -> None:
 def show_version() -> None:
     """Show current version."""
     root = get_root()
-    plugin_json_path = root / ".claude-plugin" / "plugin.json"
+    marketplace_path = root / ".claude-plugin" / "marketplace.json"
 
-    if plugin_json_path.exists():
-        plugin_json = load_json(plugin_json_path)
-        version = plugin_json.get("version", "unknown")
+    if marketplace_path.exists():
+        marketplace = load_json(marketplace_path)
+        version = marketplace.get("metadata", {}).get("version", "unknown")
         print(f"Current version: {version}")
     else:
-        print("✗ plugin.json not found")
+        print("✗ marketplace.json not found")
         sys.exit(1)
 
 

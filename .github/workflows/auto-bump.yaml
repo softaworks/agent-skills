@@ -64,8 +64,7 @@ jobs:
             exit 0
           fi
 
-          # Stage version files
-          git add .claude-plugin/plugin.json
+          # Stage version file
           git add .claude-plugin/marketplace.json
 
           git commit -m "chore: auto-bump version [skip ci]"

@@ -195,7 +195,66 @@ Write the README.md to: skills/[skill-name]/README.md
 
 Wait for the agent to complete, then report success.
 
-### 9. Final Report
+### 9. Add Plugin Entry to marketplace.json
+
+Add a new plugin entry to `.claude-plugin/marketplace.json` for the new skill.
+
+**Read the marketplace.json file** to get current plugins array.
+
+**Ask user for category** using AskUserQuestion:
+
+"Which category does this skill belong to?"
+
+Options:
+- ai-tools (AI-powered tools)
+- meta (Skills for building skills/commands/plugins)
+- documentation (Writing, diagrams, docs)
+- design-frontend (UI/UX, React, styling)
+- development (Database, dependencies, refactoring)
+- planning (Requirements, implementation planning)
+- professional (Communication, feedback)
+- testing (QA, test planning)
+- git (Version control)
+- utilities (General tools)
+
+**Create the plugin entry:**
+
+```json
+{
+  "name": "[skill-name]",
+  "description": "[description from SKILL.md frontmatter]",
+  "source": "./",
+  "strict": false,
+  "skills": ["./skills/[skill-name]"],
+  "category": "[selected-category]",
+  "keywords": ["[category]", "[relevant]", "[tags]"]
+}
+```
+
+**Insert the plugin entry** into the plugins array in marketplace.json, keeping entries grouped by category.
+
+Use the Edit tool to add the new entry before the agents section (after the last skill entry for the selected category, or at the end of skills if it's a new category).
+
+Report: "✅ Added plugin entry to marketplace.json"
+
+### 10. Update Available Skills Table in README.md
+
+Update the "Available Skills" table in README.md to include the new skill.
+
+**Read README.md** to find the Available Skills table.
+
+**Find the rows for the skill's category** and add the new skill in the appropriate position.
+
+For example, if adding a skill to "🤖 AI Tools" category:
+```markdown
+| 🤖 AI Tools | [new-skill](skills/new-skill/README.md) | Description here |
+```
+
+Use the Edit tool to add the new row in the correct category section.
+
+Report: "✅ Updated Available Skills table in README.md"
+
+### 11. Final Report
 
 After all steps are complete, report to the user:
 
@@ -208,11 +267,12 @@ After all steps are complete, report to the user:
 - SKILL.md: ✅ Valid
 - Naming: [✅ Consistent / ⚠️ Fixed / ⚠️ Inconsistent]
 - README.md: [✅ Exists / 📝 Created]
+- marketplace.json: ✅ Plugin entry added
+- Available Skills table: ✅ Updated
 
 Next steps:
 1. Review the skill at skills/[skill-name]
-2. Run /sync-skills-readme to update the root README.md table
-3. Commit the changes: git add skills/[skill-name] && git commit -m "feat: add [skill-name] skill"
+2. Commit the changes
 ```
 
 ## Error Handling
@@ -248,15 +308,17 @@ Next steps:
 ## Tools to Use
 
 - **Bash** - Validate paths, copy directories, check naming
-- **Read** - Read SKILL.md frontmatter
-- **Edit** - Fix SKILL.md name field if needed (based on user choice)
+- **Read** - Read SKILL.md frontmatter, marketplace.json, README.md
+- **Edit** - Fix SKILL.md name field, update marketplace.json, update README.md
 - **Task** - Spawn sub-agent to create README.md
-- **AskUserQuestion** - Ask about fixing naming inconsistencies
+- **AskUserQuestion** - Ask about fixing naming inconsistencies, ask for category
 
 ## Success Criteria
 
 - Skill copied to skills/ directory
 - Folder name and SKILL.md name field are consistent and kebab-case
 - README.md exists (either copied or created by sub-agent)
+- Plugin entry added to marketplace.json
+- Available Skills table in README.md updated
 - User informed of all actions taken
 - Clear next steps provided
