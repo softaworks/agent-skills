@@ -35,6 +35,7 @@ Skills follow the [Agent Skills](https://agentskills.io/) format.
 | 🎨 Design & Frontend | [design-system-starter](skills/design-system-starter/README.md) | Create design systems |
 | 🎨 Design & Frontend | [mui](skills/mui/README.md) | Material-UI v7 patterns |
 | 🎨 Design & Frontend | [openapi-to-typescript](skills/openapi-to-typescript/README.md) | Convert OpenAPI to TypeScript |
+| 🎨 Design & Frontend | [react-dev](skills/react-dev/README.md) | Type-safe React 18-19 with TypeScript |
 | 🛠️ Development | [database-schema-designer](skills/database-schema-designer/README.md) | Design robust database schemas |
 | 🛠️ Development | [dependency-updater](skills/dependency-updater/README.md) | Smart dependency management |
 | 🛠️ Development | [naming-analyzer](skills/naming-analyzer/README.md) | Suggest better variable/function names |
