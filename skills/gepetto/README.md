@@ -44,6 +44,7 @@ Result: Clear implementation roadmap, reviewed by multiple LLMs, ready for execu
 - [Best Practices](#best-practices)
 - [Implementing the Plan](#implementing-the-plan)
 - [Integration with ralph-loop (Optional)](#integration-with-ralph-loop-optional)
+- [Integration with Ralphy (Optional)](#integration-with-ralphy-optional)
 - [File Structure](#file-structure)
 
 ## Installation
@@ -158,6 +159,7 @@ planning/
 ├── claude-plan.md               # Implementation plan
 ├── claude-integration-notes.md  # Review feedback decisions
 ├── claude-ralph-loop-prompt.md  # Ready-to-run ralph-loop prompt
+├── claude-ralphy-prd.md         # Ready-to-run Ralphy PRD
 ├── reviews/
 │   ├── gemini-review.md         # Gemini's feedback
 │   └── codex-review.md          # Codex's feedback
@@ -175,7 +177,8 @@ planning/
 | `claude-plan.md` | The main deliverable - complete implementation plan |
 | `sections/*.md` | Self-contained units ready for implementation |
 | `reviews/*.md` | External perspectives on your plan |
-| `claude-ralph-loop-prompt.md` | One-command execution with ralph-loop |
+| `claude-ralph-loop-prompt.md` | One-command execution with ralph-loop (Claude Code plugin) |
+| `claude-ralphy-prd.md` | One-command execution with Ralphy (external CLI) |
 
 ## External Review
 
@@ -228,7 +231,8 @@ gepetto detects existing files and resumes from where it left off.
 | `+ reviews/` | Feedback integration |
 | `+ sections/index.md` | Section writing |
 | `+ all sections` | Ralph-loop prompt generation |
-| `+ claude-ralph-loop-prompt.md` | Done |
+| `+ claude-ralph-loop-prompt.md` | Ralphy PRD generation |
+| `+ claude-ralphy-prd.md` | Done |
 
 ## Best Practices
 
@@ -271,15 +275,25 @@ Each section file contains:
 
 You can implement sections yourself, delegate to another Claude session, or hand off to a team member.
 
-### Option B: Autonomous with ralph-loop (Optional)
+### Option B: Autonomous with ralph-loop (Claude Code Plugin)
 
-Best for: hands-off execution, large plans, overnight runs.
+Best for: hands-off execution within Claude Code, large plans, overnight runs.
 
 ```bash
 /ralph-loop @planning/claude-ralph-loop-prompt.md --completion-promise "COMPLETE" --max-iterations 100
 ```
 
 See [Integration with ralph-loop](#integration-with-ralph-loop-optional) for details.
+
+### Option C: Autonomous with Ralphy (External CLI)
+
+Best for: multi-engine support (Claude, Codex, Cursor, etc.), parallel execution, branch-per-task workflows.
+
+```bash
+ralphy --prd planning/claude-ralphy-prd.md
+```
+
+See [Integration with Ralphy](#integration-with-ralphy-optional) for details.
 
 ---
 
@@ -361,6 +375,83 @@ If blocked after 10 iterations, document blockers and output <promise>SECTION-01
 /plugin install ralph-loop
 /plugin enable ralph-loop
 ```
+
+---
+
+## Integration with Ralphy (Optional)
+
+gepetto generates `claude-ralphy-prd.md` for optional integration with [Ralphy](https://github.com/michaelshimeles/ralphy), an autonomous AI coding loop that works with multiple AI engines.
+
+### What is Ralphy?
+
+Ralphy is an external CLI tool that iterates through a task list (PRD.md) and executes each task using an AI CLI of your choice. Unlike ralph-loop (which runs inside Claude Code), Ralphy runs externally and supports multiple AI engines.
+
+### Key Differences: ralph-loop vs Ralphy
+
+| Feature | ralph-loop | Ralphy |
+|---------|-----------|--------|
+| **Runs in** | Claude Code (plugin) | External CLI |
+| **AI Engines** | Claude only | Claude, Codex, Cursor, Qwen, Droid |
+| **Input format** | Single large prompt | Checkbox task list |
+| **Context passing** | Embedded in prompt | AI reads referenced files |
+| **Parallel execution** | No | Yes (`--parallel`) |
+| **Branch per task** | No | Yes (`--branch-per-task`) |
+| **Auto PR creation** | No | Yes (`--create-pr`) |
+
+### One-Command Execution
+
+```bash
+# Using the generated PRD directly
+ralphy --prd planning/claude-ralphy-prd.md
+
+# Or copy to project root
+cp planning/claude-ralphy-prd.md ./PRD.md
+ralphy
+```
+
+### How It Works
+
+1. Ralphy reads `claude-ralphy-prd.md` and finds checkbox tasks
+2. For each unchecked task, it builds a prompt with project context
+3. The AI (Claude by default) reads the referenced section file for detailed requirements
+4. AI implements the task, runs tests, commits
+5. Ralphy marks the task complete (`- [ ]` → `- [x]`)
+6. Repeat until all tasks done
+
+### The Generated PRD Format
+
+```markdown
+# Implementation PRD
+
+## Tasks
+
+- [ ] Section 01: Foundation - Read sections/section-01-foundation.md for details
+- [ ] Section 02: Core libs - Read sections/section-02-core-libs.md for details
+- [ ] Section 03: API layer - Read sections/section-03-api-layer.md for details
+```
+
+Each task references the detailed section file, so the AI gets all the context Gepetto prepared.
+
+### Advanced Usage
+
+```bash
+# Use different AI engine
+ralphy --prd planning/claude-ralphy-prd.md --codex
+ralphy --prd planning/claude-ralphy-prd.md --cursor
+
+# Parallel execution (3 agents by default)
+ralphy --prd planning/claude-ralphy-prd.md --parallel
+
+# Branch per task with auto PR
+ralphy --prd planning/claude-ralphy-prd.md --branch-per-task --create-pr
+
+# Skip tests for faster iteration
+ralphy --prd planning/claude-ralphy-prd.md --fast
+```
+
+### Learn More
+
+See the [Ralphy repository](https://github.com/michaelshimeles/ralphy) for installation, configuration, and advanced features.
 
 ## File Structure
 
