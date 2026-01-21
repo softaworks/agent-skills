@@ -337,6 +337,23 @@
       ]
     },
     {
+      "name": "react-useeffect",
+      "description": "React useEffect best practices from official docs. Use when writing/reviewing useEffect, useState for derived values, data fetching, or state synchronization. Teaches when NOT to use Effect and better alternatives.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/react-useeffect"
+      ],
+      "category": "design-frontend",
+      "keywords": [
+        "design",
+        "frontend",
+        "react",
+        "hooks",
+        "useeffect"
+      ]
+    },
+    {
       "name": "database-schema-designer",
       "description": "Design robust, scalable database schemas for SQL and NoSQL databases. Provides normalization guidelines, indexing strategies, migration patterns.",
       "source": "./",
