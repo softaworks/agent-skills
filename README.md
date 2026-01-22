@@ -135,6 +135,7 @@ Add skills to project knowledge or paste SKILL.md contents into the conversation
 | 🔧 Utilities | [domain-name-brainstormer](skills/domain-name-brainstormer/README.md) | Generate & check domain names |
 | 🔧 Utilities | [humanizer](skills/humanizer/README.md) | Remove AI writing patterns |
 | 🔧 Utilities | [meme-factory](skills/meme-factory/README.md) | Generate memes with API |
+| 🔧 Utilities | [jira](skills/jira/README.md) | Natural language Jira interaction |
 | 🔧 Utilities | [web-to-markdown](skills/web-to-markdown/README.md) | Convert webpages to Markdown |
 
 ---

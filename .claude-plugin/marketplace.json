@@ -660,6 +660,23 @@
       ]
     },
     {
+      "name": "jira",
+      "description": "Use when the user mentions Jira issues (e.g., \"PROJ-123\"), asks about tickets, wants to create/view/update issues, check sprint status, or manage their Jira workflow. Triggers on keywords like \"jira\", \"issue\", \"ticket\", \"sprint\", \"backlog\", or issue key patterns.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/jira"
+      ],
+      "category": "utilities",
+      "keywords": [
+        "utilities",
+        "jira",
+        "tickets",
+        "project-management",
+        "atlassian"
+      ]
+    },
+    {
       "name": "agent-ascii-ui-mockup-generator",
       "description": "Visualize UI concepts through ASCII mockups before implementation. Creates multiple ASCII mockup variations for dashboard layouts, forms, and other UI components.",
       "source": "./",
