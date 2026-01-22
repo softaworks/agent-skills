@@ -40,6 +40,7 @@ The skill silently checks for available integrations:
 
 | Integration | Detection Method |
 |-------------|------------------|
+| Claude Code History | `~/.claude/projects` directory exists with `.jsonl` files |
 | GitHub CLI | `gh auth status` succeeds |
 | Git | Current directory is a git repository |
 | Jira CLI | `jira` command exists |
@@ -123,6 +124,30 @@ User: "Also did research on payment providers"
 [Interview continues...]
 ```
 
+### With Claude Code History
+
+```
+Claude: "I can also pull your Claude Code session history from yesterday.
+This can help recall work that isn't in git/Jira. Want me to check?"
+User: "Yes"
+
+Claude: "Here are your Claude Code sessions from yesterday.
+Select the ones relevant to your standup:"
+  ☑ Fix authentication timeout bug (backend-api)
+  ☑ Implement OAuth flow (backend-api)
+  ☐ Update personal blog (blog) - [user unchecks personal project]
+  ☑ Research payment providers (docs)
+
+User: [selects 3 relevant items]
+
+Claude: "Here's what I found from your activity:
+- [From Claude Code] Fix authentication timeout bug
+- [From Claude Code] Implement OAuth flow
+- [From Claude Code] Research payment providers
+
+Anything else you worked on yesterday that I missed?"
+```
+
 ### With Jira Integration
 
 ```
@@ -140,6 +165,7 @@ User: "Yes, continuing PROJ-123 and starting PROJ-456"
 - None - the skill works with manual input alone
 
 **Optional (for enhanced functionality):**
+- **Claude Code** - For pulling session history (research, debugging, planning work not in git)
 - **GitHub CLI** (`gh`) - For pulling commits, PRs, and reviews
 - **Git** - For local commit history
 - **Jira CLI** or **Atlassian MCP** - For pulling ticket information
@@ -207,5 +233,5 @@ The skill generates a Markdown document like this:
 |------|-------------|
 | Trigger phrases | "daily", "standup", "scrum update", "status update" |
 | Interview questions | Yesterday, Today, Blockers, Discussion Topics |
-| Supported integrations | GitHub CLI, Git, Jira CLI, Atlassian MCP |
+| Supported integrations | Claude Code History, GitHub CLI, Git, Jira CLI, Atlassian MCP |
 | Output format | Markdown |

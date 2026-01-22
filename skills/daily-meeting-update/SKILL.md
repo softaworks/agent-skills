@@ -1,6 +1,6 @@
 ---
 name: daily-meeting-update
-description: "Interactive daily standup/meeting update generator. Use when user says 'daily', 'standup', 'scrum update', 'status update', or wants to prepare for daily meeting. Conducts interview (yesterday, today, blockers, discussion topics) and optionally pulls activity from GitHub/git/Jira if available and approved by user."
+description: "Interactive daily standup/meeting update generator. Use when user says 'daily', 'standup', 'scrum update', 'status update', 'what did I do yesterday', 'prepare for meeting', 'morning update', or 'team sync'. Pulls activity from GitHub, Jira, and Claude Code session history. Conducts 4-question interview (yesterday, today, blockers, discussion topics) and generates formatted Markdown update."
 user-invocable: true
 ---
 
@@ -18,9 +18,10 @@ START
   ▼
 ┌─────────────────────────────────────────────────────┐
 │ Phase 1: DETECT & OFFER INTEGRATIONS                │
-│ • Check: gh CLI installed? jira CLI? Atlassian MCP? │
-│ • If available → Ask user: "Want me to pull data?"  │
-│ • If yes → Ask which repos/projects                 │
+│ • Check: Claude Code history? gh CLI? jira CLI?     │
+│ • Claude Code → Pull yesterday's session digest     │
+│   → User selects relevant items via multiSelect     │
+│ • GitHub/Jira → Ask user, pull if approved          │
 │ • Pull data NOW (before interview)                  │
 ├─────────────────────────────────────────────────────┤
 │ Phase 2: INTERVIEW (with insights)                  │
@@ -47,12 +48,13 @@ Check for available integrations **silently** (suppress errors, don't show to us
 
 | Integration | Detection |
 |-------------|-----------|
+| **Claude Code History** | `~/.claude/projects` directory exists with `.jsonl` files |
 | GitHub CLI | `gh auth status` succeeds |
 | Jira CLI | `jira` command exists |
 | Atlassian MCP | `mcp__atlassian__*` tools available |
 | Git | Inside a git repository |
 
-### Step 2: Offer Integrations (if available)
+### Step 2: Offer GitHub/Jira Integrations (if available)
 
 > **Claude Code users:** Use `AskUserQuestionTool` tool for all questions in this phase.
 
@@ -90,7 +92,7 @@ Options:
 - "No, I'll provide everything manually"
 ```
 
-### Step 3: Pull Data (if approved)
+### Step 3: Pull GitHub/Jira Data (if approved)
 
 **GitHub/Git** — For each approved repo:
 - Commits by user since yesterday
@@ -100,6 +102,57 @@ Options:
 **Jira** — Tickets assigned to user, updated in last 24h
 
 **Key insight**: Store results to use as context in Phase 2 interview.
+
+### Step 4: Offer Claude Code History
+
+This integration captures everything you worked on with Claude Code — useful for recalling work that isn't in git or Jira.
+
+**Detection:**
+```bash
+ls ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1
+```
+
+**If Claude Code history exists, ask:**
+
+```
+"I can also pull your Claude Code session history from yesterday. This can help recall work that isn't in git/Jira (research, debugging, planning). Want me to check?"
+
+Options:
+- "Yes, pull my Claude Code sessions"
+- "No, I have everything I need"
+```
+
+**If yes, run the digest script:**
+
+```bash
+python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --format json
+```
+
+**Then present sessions with multiSelect:**
+
+Use `AskUserQuestionTool` with `multiSelect: true` to let user pick relevant items:
+
+```
+"Here are your Claude Code sessions from yesterday. Select the ones relevant to your standup:"
+
+Options (multiSelect):
+- "Fix authentication bug (backend-api)"
+- "Implement OAuth flow (backend-api)"
+- "Update homepage styles (frontend-app)"
+- "Research payment providers (docs)"
+```
+
+**Key insight:** User selects which sessions are work-related. Personal projects or experiments can be excluded.
+
+**Do NOT run digest script when:**
+- User explicitly says "No" to Claude Code history
+- User says they'll provide everything manually
+- `~/.claude/projects` directory doesn't exist
+
+**If digest script fails:**
+- Fallback: Skip Claude Code integration silently, proceed with interview
+- Common issues: Python not installed, no sessions from yesterday, permission errors
+- Do NOT block the standup flow — the script is supplemental, not required
 
 ---
 
@@ -116,7 +169,7 @@ Options:
 ```
 "Here's what I found from your activity:
 - Merged PR #123: fix login timeout
-- 3 commits in my-life-manager
+- 3 commits in backend-api
 - Reviewed PR #456 (approved)
 
 Anything else you worked on yesterday that I missed?"
@@ -227,11 +280,24 @@ Combine all information into clean Markdown:
 
 | Phase | Action | Tool |
 |-------|--------|------|
-| 1. Detect & Offer | Check gh/jira/mcp, ask user, pull data | Bash (silent), AskUserQuestionTool* |
+| 1. Detect & Offer | Check gh/jira/claude history, ask user, pull data | Bash (silent), AskUserQuestionTool* |
 | 2. Interview | Ask 4 questions with insights | AskUserQuestionTool* |
 | 3. Generate | Format Markdown | Output text |
 
 *Claude Code only: Use `AskUserQuestionTool` tool for structured questions.
+
+### Claude Code Digest Script
+
+```bash
+# Get yesterday's sessions as JSON
+python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --format json
+
+# Get today's sessions
+python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --date today --format json
+
+# Filter to specific project
+python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --project ~/my-app --format json
+```
 
 ---
 
@@ -242,18 +308,35 @@ Claude: "Let's prepare your daily! I detected GitHub configured. Want me to pull
 User: "Yes"
 
 Claude: "Which repos should I check?"
-User: "my-life-manager and softaworks-landing"
+User: "backend-api and frontend-app"
 
-[Claude pulls data silently]
+[Claude pulls GitHub data silently]
+
+Claude: "I can also pull your Claude Code session history from yesterday. Want me to check?"
+User: "Yes"
+
+[Claude runs digest script, gets 5 sessions]
+
+Claude: "Here are your Claude Code sessions from yesterday. Select the ones relevant to your standup:"
+  ☑ Fix authentication timeout bug (backend-api)
+  ☑ Implement OAuth flow (backend-api)
+  ☐ Update personal blog (blog) - [user unchecks personal project]
+  ☑ Research payment providers (docs)
+  ☐ Debugging test failures (experiments)
+
+User: [selects 3 relevant items]
 
 Claude: "Here's what I found from your activity:
 - Merged PR #120: fix login timeout
 - Opened PR #125: feat: add OAuth flow
 - Reviewed PR #123 (approved), PR #456 (changes requested)
-- 5 commits in my-life-manager
+- 5 commits in backend-api
+- [From Claude Code] Fix authentication timeout bug
+- [From Claude Code] Implement OAuth flow
+- [From Claude Code] Research payment providers
 
 Anything else you worked on yesterday that I missed?"
-User: "I also did some research on payment providers"
+User: "No, that covers it"
 
 Claude: "What will you work on today?"
 User: "Continue the OAuth feature and deploy to staging"
