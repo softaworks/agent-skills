@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Skills, agents, and commands for AI coding agents - individually selectable",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "plugins": [
     {
