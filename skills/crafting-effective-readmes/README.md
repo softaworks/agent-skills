@@ -174,3 +174,7 @@ crafting-effective-readmes/
 ## Related Skills
 
 - `writing-clearly-and-concisely` - For general prose quality, clear writing, and avoiding AI patterns
+
+## Attribution
+
+- Original skill by @joshuadavidthomas from [joshuadavidthomas/agent-skills](https://github.com/joshuadavidthomas/agent-skills) (MIT)

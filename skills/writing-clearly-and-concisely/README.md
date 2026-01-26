@@ -151,5 +151,7 @@ Add the skill to project knowledge or paste SKILL.md contents into your conversa
 
 ## Attribution
 
+- Original skill by @joshuadavidthomas from [joshuadavidthomas/agent-skills](https://github.com/joshuadavidthomas/agent-skills) (MIT)
+- Adapted from [obra/the-elements-of-style](https://github.com/obra/the-elements-of-style)
 - Writing principles from *The Elements of Style* by William Strunk Jr. (1918)
 - AI pattern research from Wikipedia's field guide to AI-generated content detection
