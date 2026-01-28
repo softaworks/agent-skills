@@ -35,3 +35,18 @@ jobs:
 
           echo "✓ marketplace.json is valid"
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate dist/ is up to date
+        run: |
+          python3 scripts/build_plugins.py
+          if ! git diff --quiet dist/ .claude-plugin/marketplace.json; then
+            echo "ERROR: dist/ is out of date. Run 'python3 scripts/build_plugins.py' and commit."
+            git diff --stat dist/ .claude-plugin/marketplace.json
+            exit 1
+          fi
+          echo "✓ dist/ is up to date"
+
