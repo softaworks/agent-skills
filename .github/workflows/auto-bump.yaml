@@ -52,6 +52,10 @@ jobs:
 
           echo "should_bump=true" >> $GITHUB_OUTPUT
 
+      - name: Build plugin distributions
+        if: steps.bump.outputs.should_bump == 'true'
+        run: python3 scripts/build_plugins.py
+
       - name: Commit version bump
         if: steps.bump.outputs.should_bump == 'true'
         run: |
@@ -59,13 +63,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Check if there are changes to commit
-          if git diff --quiet; then
+          if git diff --quiet && git diff --cached --quiet; then
             echo "No version changes to commit"
             exit 0
           fi
 
-          # Stage version file
+          # Stage version file and built plugins
           git add .claude-plugin/marketplace.json
+          git add dist/plugins/
 
           git commit -m "chore: auto-bump version [skip ci]"
           git push
