@@ -53,6 +53,10 @@ RECOMMENDED_SECTIONS = [
     "Potential Gotchas",
 ]
 
+# Accept any standard Markdown heading level for required/recommended sections.
+SECTION_HEADING_PATTERN = r'(?:^|\n)#{1,6}\s*'
+NEXT_HEADING_PATTERN = r'\n#{1,6}\s+'
+
 
 def check_todos(content: str) -> tuple[bool, list[str]]:
     """Check for remaining TODO placeholders."""
@@ -65,14 +69,14 @@ def check_required_sections(content: str) -> tuple[bool, list[str]]:
     missing = []
     for section in REQUIRED_SECTIONS:
         # Look for section header
-        pattern = rf'(?:^|\n)##?\s*{re.escape(section)}'
+        pattern = rf'{SECTION_HEADING_PATTERN}{re.escape(section)}'
         match = re.search(pattern, content, re.IGNORECASE)
         if not match:
             missing.append(f"{section} (missing)")
         else:
             # Check if section has meaningful content (not just placeholder)
             section_start = match.end()
-            next_section = re.search(r'\n##?\s+', content[section_start:])
+            next_section = re.search(NEXT_HEADING_PATTERN, content[section_start:])
             section_end = section_start + next_section.start() if next_section else len(content)
             section_content = content[section_start:section_end].strip()
 
@@ -87,7 +91,7 @@ def check_recommended_sections(content: str) -> list[str]:
     """Check which recommended sections are missing."""
     missing = []
     for section in RECOMMENDED_SECTIONS:
-        pattern = rf'(?:^|\n)##?\s*{re.escape(section)}'
+        pattern = rf'{SECTION_HEADING_PATTERN}{re.escape(section)}'
         if not re.search(pattern, content, re.IGNORECASE):
             missing.append(section)
     return missing
