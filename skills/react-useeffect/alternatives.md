@@ -72,7 +72,56 @@ function Profile({ userId }) {
 
 ---
 
-## 4. Store ID Instead of Object
+## 4. Adjust State During Render (Partial Reset)
+
+When you need to adjust *some* (not all) state when a prop changes:
+
+```tsx
+// BAD: Effect causes extra render pass
+function List({ items }) {
+  const [selection, setSelection] = useState(null);
+
+  useEffect(() => {
+    setSelection(null); // Extra render after DOM update
+  }, [items]);
+}
+
+// BETTER: Adjust state during render
+function List({ items }) {
+  const [selection, setSelection] = useState(null);
+  const [prevItems, setPrevItems] = useState(items);
+
+  if (items !== prevItems) {
+    setPrevItems(items);    // Remember for next render
+    setSelection(null);     // Adjust before React renders children
+  }
+}
+
+// BEST: Calculate during render (if possible)
+function List({ items }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const selection = items.find(item => item.id === selectedId) ?? null;
+}
+```
+
+**How render-time adjustment works:**
+- React detects `setState` calls during render
+- React discards the returned JSX and immediately re-renders
+- No DOM update or child render with stale value
+
+**Important constraints:**
+- Can only update *same component's* state (not other components')
+- Must have a condition like `items !== prevItems` to avoid infinite loop
+- Most components don't need this — prefer `key` or derived state first
+
+**Priority:**
+1. `key` prop (resets ALL state)
+2. Calculate during render (derive what you need)
+3. Adjust state during render (partial reset only when necessary)
+
+---
+
+## 5. Store ID Instead of Object
 
 To preserve selection when list changes:
 
@@ -99,7 +148,7 @@ function List({ items }) {
 
 ---
 
-## 5. Event Handlers for User Actions
+## 6. Event Handlers for User Actions
 
 User clicks/submits/drags should be handled in event handlers, not Effects:
 
@@ -134,7 +183,7 @@ function handleCheckoutClick() { buyProduct(); navigateTo('/checkout'); }
 
 ---
 
-## 6. useSyncExternalStore for External Stores
+## 7. useSyncExternalStore for External Stores
 
 For subscribing to external data (browser APIs, third-party stores):
 
@@ -179,7 +228,7 @@ function useOnlineStatus() {
 
 ---
 
-## 7. Lifting State Up
+## 8. Lifting State Up
 
 When two components need synchronized state, lift it to common ancestor:
 
@@ -199,7 +248,7 @@ function Parent() {
 
 ---
 
-## 8. Custom Hooks for Data Fetching
+## 9. Custom Hooks for Data Fetching
 
 Extract fetch logic with proper cleanup:
 
@@ -251,6 +300,7 @@ function SearchResults({ query }) {
 | Value from props/state | Calculate during render |
 | Expensive calculation | `useMemo` |
 | Reset all state on prop change | `key` prop |
+| Adjust some state on prop change | Adjust state during render (`prevItems` pattern) |
 | Respond to user action | Event handler |
 | Sync with external system | `useEffect` with cleanup |
 | Subscribe to external store | `useSyncExternalStore` |
