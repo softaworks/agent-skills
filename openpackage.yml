@@ -1,0 +1,10 @@
+name: agent-toolkit
+version: 1.0.10
+description: Curated collection of skills for AI coding agents. Extends agent capabilities across development, documentation, planning, and professional workflows.
+author: leonardocouy
+license: MIT
+
+includes:
+  - skills/**/*
+  - agents/**/*
+  - commands/**/*
