@@ -14,6 +14,7 @@ Effects are an **escape hatch** from React. They let you synchronize with extern
 | Derived state from props/state | `useState` + `useEffect` | Calculate during render |
 | Expensive calculations | `useEffect` to cache | `useMemo` |
 | Reset state on prop change | `useEffect` with `setState` | `key` prop |
+| Adjust some state on prop change | `useEffect` with `setState` | Adjust during render (`prevItems` pattern) |
 | User event responses | `useEffect` watching state | Event handler directly |
 | Notify parent of changes | `useEffect` calling `onChange` | Call in event handler |
 | Fetch data | `useEffect` without cleanup | `useEffect` with cleanup OR framework |
@@ -43,8 +44,12 @@ Need to respond to something?
 ├── Props/state changed and need derived value?
 │   └── CALCULATE DURING RENDER
 │       └── Expensive? Use useMemo
-└── Need to reset state when prop changes?
-    └── Use KEY PROP on component
+└── Prop changed and need to adjust state?
+    ├── Reset ALL state?
+    │   └── Use KEY PROP on component
+    └── Adjust SOME state?
+        └── ADJUST DURING RENDER (prevItems pattern)
+            └── Or store ID and derive object
 ```
 
 ## Detailed Guidance
