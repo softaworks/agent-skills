@@ -1,247 +1,151 @@
 ---
 name: daily-meeting-update
-description: "Interactive daily standup/meeting update generator. Use when user says 'daily', 'standup', 'scrum update', 'status update', 'what did I do yesterday', 'prepare for meeting', 'morning update', or 'team sync'. Pulls activity from GitHub, Jira, and Claude Code session history. Conducts 4-question interview (yesterday, today, blockers, discussion topics) and generates formatted Markdown update."
+description: "Interactive daily standup/meeting update generator. Use when user says 'daily', 'standup', 'scrum update', 'status update', 'what did I do yesterday', 'prepare for meeting', 'morning update', 'team sync', 'async update', or 'remote standup'. Pulls activity from GitHub, Jira, and Claude Code session history. Conducts interview (yesterday, today, blockers, discussion topics) and generates formatted update for sync meetings, async Slack posts, or standup bots."
 user-invocable: true
 ---
 
 # Daily Meeting Update
 
-Generate a daily standup/meeting update through an **interactive interview**. Never assume tools are configured—ask first.
+Generate a daily standup/meeting update through an **interactive interview**. Never assume tools are configured — ask first.
+
+---
+
+## Mindset
+
+1. **Tools surface what happened; the interview captures why it matters.** A merged PR without context ("I was blocked waiting for this") is noise. Always interview, even when you have full tool data.
+2. **The Topics for Discussion question is highest-signal.** It captures cross-team dependencies, architectural decisions, and team-wide risks that no tool can detect. It's the one question you cannot skip.
+3. **Async ≠ fewer questions — async updates are read without you present.** A vague sync standup is forgiven because teammates can ask. A vague async post blocks people for hours. Async format requires more precision, not less.
+4. **One missed blocker cascades.** If a user is waiting on someone outside their team, that handoff won't happen unless stated explicitly. Surface it, name names, suggest the next action.
+5. **Consent before access.** The user's repo list may include client work, personal projects, or sensitive branches they do not want surfaced in a standup. Always ask which repos; never enumerate everything visible.
+
+---
+
+## Navigation
+
+### Use this skill when:
+- User says "daily", "standup", "scrum", "morning update", "status update", "team sync"
+- User asks "what did I do yesterday" or "help me prepare for my meeting"
+- User needs an async Slack post, standup bot answer, or remote team update
+- User is catching up after missed days (cover multiple days in "yesterday")
+
+### Do NOT use this skill when:
+- User wants a project status report (different scope — weekly/monthly, audience is leadership)
+- User wants a written retrospective or sprint review
+- User is asking about a specific ticket/PR status (use Jira/GitHub tools directly)
+
+### Sync vs Async Decision Tree
+
+```
+Is the standup happening live (video/in-person/phone)?
+├─ YES → Use full Markdown template (Phases 1→2→3 below)
+│        Keep to <12 bullets; audience can ask follow-ups live
+└─ NO  → Is it posted to Slack/chat?
+          ├─ YES → Use chat format (bold headers, tag names, 4-6 lines)
+          │        → See references/async-remote-patterns.md
+          └─ NO  → Standup bot (Geekbot, Standuply)?
+                    ├─ YES → Full sentences per prompt, no bullets
+                    └─ NO  → Email/wiki → Full Markdown with links section
+```
+
+---
+
+## Philosophy
+
+The standup update is a coordination tool, not a progress report. Its job is to unblock teammates, surface dependencies before they become delays, and focus collective attention on what matters today — not to prove productivity.
 
 ---
 
 ## Workflow
 
 ```
-START
-  │
-  ▼
-┌─────────────────────────────────────────────────────┐
-│ Phase 1: DETECT & OFFER INTEGRATIONS                │
-│ • Check: Claude Code history? gh CLI? jira CLI?     │
-│ • Claude Code → Pull yesterday's session digest     │
-│   → User selects relevant items via multiSelect     │
-│ • GitHub/Jira → Ask user, pull if approved          │
-│ • Pull data NOW (before interview)                  │
-├─────────────────────────────────────────────────────┤
-│ Phase 2: INTERVIEW (with insights)                  │
-│ • Show pulled data as context                       │
-│ • Yesterday: "I see you merged PR #123, what else?" │
-│ • Today: What will you work on?                     │
-│ • Blockers: Anything blocking you?                  │
-│ • Topics: Anything to discuss at end of meeting?    │
-├─────────────────────────────────────────────────────┤
-│ Phase 3: GENERATE UPDATE                            │
-│ • Combine interview answers + tool data             │
-│ • Format as clean Markdown                          │
-│ • Present to user                                   │
-└─────────────────────────────────────────────────────┘
+Phase 1: DETECT & OFFER INTEGRATIONS
+  ↓ Check Claude Code history, gh CLI, jira CLI (silently)
+  ↓ Ask user which repos/integrations to pull (consent required)
+  ↓ Pull data NOW — before interview, not during
+
+Phase 2: INTERVIEW (with insights)
+  ↓ Show pulled data as context for each question
+  ↓ Q1: Yesterday (with tool data as prompt)
+  ↓ Q2: Today (with Jira tickets as suggestions)
+  ↓ Q3: Blockers
+  ↓ Q4: Topics for Discussion (NEVER skip)
+
+Phase 3: GENERATE UPDATE
+  ↓ Combine interview answers + tool data
+  ↓ Format for meeting type (sync/async/bot)
+  ↓ Present to user
 ```
 
 ---
 
 ## Phase 1: Detect & Offer Integrations
 
-### Step 1: Silent Detection
+Detect silently (suppress all errors). Full detection commands: `references/integration-details.md`
 
-Check for available integrations **silently** (suppress errors, don't show to user):
-
-| Integration | Detection |
-|-------------|-----------|
-| **Claude Code History** | `~/.claude/projects` directory exists with `.jsonl` files |
+| Integration | Quick Detection |
+|-------------|-----------------|
+| Claude Code History | `~/.claude/projects/*/*.jsonl` exists |
 | GitHub CLI | `gh auth status` succeeds |
 | Jira CLI | `jira` command exists |
 | Atlassian MCP | `mcp__atlassian__*` tools available |
 | Git | Inside a git repository |
 
-### Step 2: Offer GitHub/Jira Integrations (if available)
+**For each detected integration:** Ask user if they want it pulled and which repos/projects to include. Never pull without explicit approval.
 
-> **Claude Code users:** Use `AskUserQuestionTool` tool for all questions in this phase.
+**Claude Code History:** Run `scripts/claude_digest.py --format json`, then present sessions via `AskUserQuestionTool` with `multiSelect: true` so user can exclude personal projects.
 
-**GitHub/Git:**
+**If any integration fails:** Skip silently and proceed. No integration is required — the interview works without them.
 
-If `HAS_GH` or `HAS_GIT`:
-
-```
-"I detected you have GitHub/Git configured. Want me to pull your recent activity (commits, PRs, reviews)?"
-
-Options:
-- "Yes, pull the info"
-- "No, I'll provide everything manually"
-```
-
-If yes:
-
-```
-"Which repositories/projects should I check?"
-
-Options:
-- "Just the current directory" (if in a git repo)
-- "I'll list the repos" → user provides list
-```
-
-**Jira:**
-
-If `HAS_JIRA_CLI` or `HAS_ATLASSIAN_MCP`:
-
-```
-"I detected you have Jira configured. Want me to pull your tickets?"
-
-Options:
-- "Yes, pull my tickets"
-- "No, I'll provide everything manually"
-```
-
-### Step 3: Pull GitHub/Jira Data (if approved)
-
-**GitHub/Git** — For each approved repo:
-- Commits by user since yesterday
-- PRs opened/merged by user
-- Reviews done by user
-
-**Jira** — Tickets assigned to user, updated in last 24h
-
-**Key insight**: Store results to use as context in Phase 2 interview.
-
-### Step 4: Offer Claude Code History
-
-This integration captures everything you worked on with Claude Code — useful for recalling work that isn't in git or Jira.
-
-**Detection:**
-```bash
-ls ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1
-```
-
-**If Claude Code history exists, ask:**
-
-```
-"I can also pull your Claude Code session history from yesterday. This can help recall work that isn't in git/Jira (research, debugging, planning). Want me to check?"
-
-Options:
-- "Yes, pull my Claude Code sessions"
-- "No, I have everything I need"
-```
-
-**If yes, run the digest script:**
-
-```bash
-python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --format json
-```
-
-**Then present sessions with multiSelect:**
-
-Use `AskUserQuestionTool` with `multiSelect: true` to let user pick relevant items:
-
-```
-"Here are your Claude Code sessions from yesterday. Select the ones relevant to your standup:"
-
-Options (multiSelect):
-- "Fix authentication bug (backend-api)"
-- "Implement OAuth flow (backend-api)"
-- "Update homepage styles (frontend-app)"
-- "Research payment providers (docs)"
-```
-
-**Key insight:** User selects which sessions are work-related. Personal projects or experiments can be excluded.
-
-**Do NOT run digest script when:**
-- User explicitly says "No" to Claude Code history
-- User says they'll provide everything manually
-- `~/.claude/projects` directory doesn't exist
-
-**If digest script fails:**
-- Fallback: Skip Claude Code integration silently, proceed with interview
-- Common issues: Python not installed, no sessions from yesterday, permission errors
-- Do NOT block the standup flow — the script is supplemental, not required
+Full pull commands, error handling: `references/integration-details.md`
 
 ---
 
-## Phase 2: Interview (with insights)
+## Phase 2: Interview (with Insights)
 
-> **Claude Code users:** Use `AskUserQuestionTool` tool to conduct the interview. This provides a better UX with structured options.
+> In Claude Code: use `AskUserQuestionTool` for structured questions with options.
 
-**Use pulled data as context** to make questions smarter.
+Show pulled data as context before asking each question — this triggers memory ("I see you merged PR #123, anything else?").
 
-### Question 1: Yesterday
+### Q1: Yesterday
+Show tool data first, then: *"Anything else you worked on since the last standup that I missed?"*
 
-**If data was pulled**, show it first:
+If no data pulled: *"What did you work on yesterday/since last standup?"*
 
-```
-"Here's what I found from your activity:
-- Merged PR #123: fix login timeout
-- 3 commits in backend-api
-- Reviewed PR #456 (approved)
+### Q2: Today
+*"What will you work on today?"*
 
-Anything else you worked on yesterday that I missed?"
-```
+If Jira data pulled, suggest open tickets assigned to user as options.
 
-**If no data pulled:**
+### Q3: Blockers
+*"Any blockers or impediments?"* → If yes, follow up for details and who needs to act.
 
-```
-"What did you work on yesterday/since the last standup?"
-```
+### Q4: Topics for Discussion ← NEVER SKIP
+*"Anything to bring up at the end of the daily?"* Examples: technical decision needing input, cross-team alignment, prioritization question, announcement.
 
-If user response is vague, ask follow-up:
-- "Can you give more details about X?"
-- "Did you complete anything specific?"
+### Async/Remote Extra Questions (optional — offer if fully remote or async team)
 
-### Question 2: Today
+**Q5: Availability**
+*"Any changes to your availability today?"* (late start, focus time, timezone conflicts)
+Why: Remote teammates can't see you're AFK. Prevents cascade of blocked DMs.
 
-```
-"What will you work on today?"
+**Q6: Cross-team dependencies**
+*"Are you waiting on anyone outside your team, or does anyone outside your team need something from you?"*
+Why: Cross-team blockers stall for days async — no one escalates what isn't named.
 
-Options:
-- [Text input - user types freely]
-```
-
-**If Jira data was pulled**, you can suggest:
-
-```
-"I see you have these tickets assigned:
-- PROJ-123: Implement OAuth flow (In Progress)
-- PROJ-456: Fix payment bug (To Do)
-
-Will you work on any of these today?"
-```
-
-### Question 3: Blockers
-
-```
-"Do you have any blockers or impediments?"
-
-Options:
-- "No blockers"
-- "Yes, I have blockers" → follow-up for details
-```
-
-### Question 4: Topics for Discussion
-
-```
-"Any topic you want to bring up at the end of the daily?"
-
-Options:
-- "No, nothing to discuss"
-- "Yes" → follow-up for details
-
-Examples of topics:
-- Technical decision that needs input
-- Alignment with another team
-- Question about prioritization
-- Announcement or info for the team
-```
+Load full async/remote patterns: `references/async-remote-patterns.md`
 
 ---
 
 ## Phase 3: Generate Update
 
-Combine all information into clean Markdown:
+Format based on meeting type determined in Navigation:
 
+**Sync (Markdown):**
 ```markdown
 # Daily Update - [DATE]
 
 ## Yesterday
-- [Items from interview]
-- [Items from GitHub/Jira if pulled]
+- [Items from interview + tool data]
 
 ## Today
 - [Items from interview]
@@ -249,30 +153,60 @@ Combine all information into clean Markdown:
 ## Blockers
 - [Blockers or "No blockers"]
 
-## PRs & Reviews (if pulled from GitHub)
-- [PRs opened]
-- [PRs merged]
-- [Reviews done]
-
-## Jira (if pulled from Jira)
-- [Tickets updated]
+## PRs & Reviews (if GitHub pulled)
+- **Opened/Merged/Reviewed:** ...
 
 ## Topics for Discussion
 - [Topics or "None"]
-
 ---
-*Links:*
-- [PR links]
-- [Ticket links]
+*Links:* [PR/ticket URLs]
 ```
 
+**Async/Chat (Slack):**
+```
+*Yesterday:* [2-4 items, plain text]
+*Today:* [2-3 items]
+*Blockers:* [one sentence, name the blocker and who needs to act]
+*FYI:* [discussion topic as thread invitation]
+```
+
+Full output templates and Jira section format: `references/integration-details.md`
+
 ---
 
-## Core Principles
+## NEVER
 
-1. **Interview is primary** — Tools supplement, they don't replace human context
-2. **Consent before access** — Always ask before pulling from any integration
-3. **Context-aware questions** — Show pulled data during interview to trigger memory ("I see you merged PR #123...")
+- **NEVER run `gh`, `jira`, or `git log` without asking first** — The user's visible repos may include client work, personal projects, or branches from a confidential feature. Enumerating everything visible is a privacy violation even when technically possible.
+
+- **NEVER skip the Topics for Discussion question** — This is the highest-value question in any standup. Cross-team dependencies, architectural decisions, and process issues only surface if someone asks. Tools cannot detect them. Skipping it is the most common cause of standup meetings that "feel useless."
+
+- **NEVER generate more than 15 bullets total** — Standup updates are read in under 2 minutes. Beyond 15 bullets, teammates skim or skip entirely. If the user has more than 15 items, consolidate by impact: "Resolved 3 auth bugs" not three separate bullets.
+
+- **NEVER include raw ticket/PR numbers without title or summary** — "Fixed PROJ-123" communicates nothing to a teammate reading async. "Fixed PROJ-123: session timeout causing data loss" takes 3 seconds to write and is actually actionable.
+
+- **NEVER assume the current directory is the only project** — Engineers routinely work across 2–5 repos (frontend, backend, infra, shared libs). Defaulting to current directory silently excludes the majority of their work. Always ask.
+
+- **NEVER generate the update before completing all 4 questions** — The blocker or discussion topic revealed in Q3/Q4 often reframes Q1/Q2 ("I merged that PR but it's actually blocking deploy"). Generating early produces an update that misrepresents reality.
+
+- **NEVER use full Markdown headers (`##`) in a Slack/chat async post** — Slack does not render Markdown headings. The output displays as `## Yesterday` literally. Use `*Yesterday:*` (bold inline). Sending malformatted async updates is worse than no update — it signals the user didn't review the output.
+
+- **NEVER treat a missed-day standup the same as a normal one** — If the user skipped Monday's standup, Tuesday's "yesterday" covers 3 days. Ask: "Last time you posted was [day] — shall I cover since then?" and compress multi-day summaries rather than writing 30 bullets.
+
+- **NEVER pull "today's" activity as yesterday** — GitHub/git defaults can include commits from the current morning. A commit made at 8:47am today belongs in "Today", not "Yesterday". Scope all tool queries to `--since="yesterday midnight"` or equivalent, not "last 24h from now."
+
+---
+
+## When Things Go Wrong
+
+| Situation | Expert Response |
+|-----------|-----------------|
+| User says "I don't remember what I did" | Offer Claude Code digest first; if unavailable, ask: "What meetings did you have? Any PRs you reviewed? Any bugs you looked at even briefly?" — memory is trigger-based, not list-based |
+| All integrations fail or unavailable | Proceed with pure interview — no tools required. Note: "Going manual — just answer the 4 questions" |
+| User has only 5 minutes | Skip Phase 1 entirely; run Phase 2 verbally ("quick fire: yesterday? today? blockers? discussion?"); generate immediately |
+| Async post with a critical blocker | Move blockers to the TOP of the update; add explicit "Action needed from @name by [time]" line; do not bury it in section 3 |
+| User works across time zones (their today = team's yesterday) | Confirm the reference period: "Your standup covers work from [user's yesterday start] to now — is that right?" |
+| Standup bot asks questions one at a time | Coach user: answer each prompt as a complete sentence; the bot may forward responses verbatim to a different channel |
+| User's PR list includes team members' PRs they reviewed | Separate "Reviews done" from "Work opened/merged" — conflating them overstates output |
 
 ---
 
@@ -280,129 +214,10 @@ Combine all information into clean Markdown:
 
 | Phase | Action | Tool |
 |-------|--------|------|
-| 1. Detect & Offer | Check gh/jira/claude history, ask user, pull data | Bash (silent), AskUserQuestionTool* |
-| 2. Interview | Ask 4 questions with insights | AskUserQuestionTool* |
-| 3. Generate | Format Markdown | Output text |
+| 1. Detect & Offer | Silent check → ask consent → pull data | Bash (silent), AskUserQuestionTool |
+| 2. Interview | 4 questions with pulled-data context | AskUserQuestionTool |
+| 3. Generate | Format for meeting type | Text output |
 
-*Claude Code only: Use `AskUserQuestionTool` tool for structured questions.
-
-### Claude Code Digest Script
-
-```bash
-# Get yesterday's sessions as JSON
-python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --format json
-
-# Get today's sessions
-python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --date today --format json
-
-# Filter to specific project
-python3 ~/.claude/skills/daily-meeting-update/scripts/claude_digest.py --project ~/my-app --format json
-```
-
----
-
-## Example Session
-
-```
-Claude: "Let's prepare your daily! I detected GitHub configured. Want me to pull your recent activity?"
-User: "Yes"
-
-Claude: "Which repos should I check?"
-User: "backend-api and frontend-app"
-
-[Claude pulls GitHub data silently]
-
-Claude: "I can also pull your Claude Code session history from yesterday. Want me to check?"
-User: "Yes"
-
-[Claude runs digest script, gets 5 sessions]
-
-Claude: "Here are your Claude Code sessions from yesterday. Select the ones relevant to your standup:"
-  ☑ Fix authentication timeout bug (backend-api)
-  ☑ Implement OAuth flow (backend-api)
-  ☐ Update personal blog (blog) - [user unchecks personal project]
-  ☑ Research payment providers (docs)
-  ☐ Debugging test failures (experiments)
-
-User: [selects 3 relevant items]
-
-Claude: "Here's what I found from your activity:
-- Merged PR #120: fix login timeout
-- Opened PR #125: feat: add OAuth flow
-- Reviewed PR #123 (approved), PR #456 (changes requested)
-- 5 commits in backend-api
-- [From Claude Code] Fix authentication timeout bug
-- [From Claude Code] Implement OAuth flow
-- [From Claude Code] Research payment providers
-
-Anything else you worked on yesterday that I missed?"
-User: "No, that covers it"
-
-Claude: "What will you work on today?"
-User: "Continue the OAuth feature and deploy to staging"
-
-Claude: "Any blockers?"
-User: "No"
-
-Claude: "Any topic to bring up at the end of the daily?"
-User: "Yes, I want to discuss the architecture of the new payments module"
-
-[Claude generates update]
-```
-
----
-
-## Output Example
-
-```markdown
-# Daily Update - 2026-01-22
-
-## Yesterday
-- Worked on authentication feature
-- Research on payment providers
-- Merged PR #120 (fix: login timeout)
-- Opened PR #125 (feat: add OAuth flow)
-
-## Today
-- Continue OAuth feature
-- Deploy to staging
-
-## Blockers
-- No blockers
-
-## PRs & Reviews
-- **Opened:** PR #125 - feat: add OAuth flow
-- **Merged:** PR #120 - fix: login timeout
-- **Reviews:** PR #123 (approved), PR #456 (changes requested)
-
-## Topics for Discussion
-- Architecture of the new payments module
-
----
-*Links:*
-- https://github.com/org/repo/pull/125
-- https://github.com/org/repo/pull/120
-```
-
----
-
-## Anti-Patterns
-
-| Avoid | Why (Expert Knowledge) | Instead |
-|-------|------------------------|---------|
-| Run gh/jira without asking | Users may have personal repos visible, or be in a sensitive project context they don't want exposed | Always ask first, let user choose repos |
-| Assume current directory is the only project | Developers often work on 2-5 repos simultaneously (frontend, backend, infra) | Ask "Which projects are you working on?" |
-| Skip interview even with tool data | Tools capture WHAT happened but miss WHY and context (research, meetings, planning) | Interview is primary, tools supplement |
-| Generate update before all 4 questions | User might have critical blocker or discussion topic that changes the narrative | Complete interview, then generate |
-| Include raw commit messages | Commit messages are often cryptic ("fix", "wip") and don't tell the story | Summarize into human-readable outcomes |
-| Ask for data after interview | Showing insights during interview makes questions smarter ("I see you merged PR #123, anything else?") | Pull data first, then interview with context |
-
----
-
-## NEVER
-
-- **NEVER assume tools are configured** — Many devs have gh installed but not authenticated, or jira CLI pointing to wrong instance
-- **NEVER skip the "Topics for Discussion" question** — This is often the most valuable part of standup that tools can't capture
-- **NEVER generate more than 15 bullets** — Standup should be <2 minutes to read; long updates lose the audience
-- **NEVER include ticket/PR numbers without context** — "PROJ-123" means nothing; always include title or summary
-- **NEVER pull data from repos user didn't explicitly approve** — Even if you can see other repos, respect boundaries
+**Reference files:**
+- `references/async-remote-patterns.md` — Slack format, bot format, time-zone edge cases, remote extras
+- `references/integration-details.md` — All detection/pull commands, error handling, output templates

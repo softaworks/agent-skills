@@ -1,34 +1,77 @@
 ---
 name: jira
-description: Use when the user mentions Jira issues (e.g., "PROJ-123"), asks about tickets, wants to create/view/update issues, check sprint status, or manage their Jira workflow. Triggers on keywords like "jira", "issue", "ticket", "sprint", "backlog", or issue key patterns.
+description: Use when the user mentions Jira issues (e.g., "PROJ-123"), asks about tickets, wants to create/view/update issues, check sprint status, or manage their Jira workflow. Triggers on keywords like "jira", "issue", "ticket", "sprint", "backlog", "transition", "epic", or issue key patterns like ABC-123.
 ---
 
 # Jira
 
-Natural language interaction with Jira. Supports multiple backends.
+Natural language interaction with Jira. Supports CLI and MCP backends. Covers Jira Cloud and Server/Data Center.
 
-## Backend Detection
+---
 
-**Run this check first** to determine which backend to use:
+## Mindset
+
+1. **Fetch before you touch.** Never assume current state — an issue could have been updated 30 seconds ago. Always retrieve before editing or transitioning.
+
+2. **IDs, not names.** Jira Cloud rejects display names for users, transition names, and link types. Resolve every identifier to its machine ID before acting. "Done" is not a transition ID; "5f3a..." is.
+
+3. **Cloud and Server are different APIs.** Cloud requires ADF for descriptions; Server takes plain markup. Cloud uses `accountId`; Server uses `username`. Cloud is `/rest/api/3/`; Server is `/rest/api/2/`. Detect first, act second.
+
+4. **Notifications are not free.** Every field update notifies all watchers. Bulk-editing 20 tickets sends 20 notification storms. Get explicit approval before any batch operation.
+
+5. **Transitions have gates.** Workflow enforces order. "To Do" → "Done" may be blocked if the project requires "In Progress" as an intermediate step. Get available transitions, pick from that list.
+
+---
+
+## Navigation
+
+**Use this skill when:**
+- User mentions a Jira issue key (pattern `[A-Z]+-[0-9]+`)
+- User asks to create, view, update, comment on, or transition a ticket
+- User asks about sprint status, backlog, or epics
+- User wants to search or filter Jira issues (JQL)
+
+**Do NOT use this skill when:**
+- User is asking about GitHub Issues, Linear, Azure DevOps, or other trackers — route to the appropriate skill
+- User wants to configure Jira itself (workflow schemes, field configurations) — those require Jira admin UI
+- User wants Confluence pages — use Confluence-specific MCP tools
+
+**Backend decision tree:**
 
 ```
-1. Check if jira CLI is available:
+1. Is `jira` CLI available?
    → Run: which jira
-   → If found: USE CLI BACKEND
+   → YES: USE CLI BACKEND (references/commands.md)
 
-2. If no CLI, check for Atlassian MCP:
-   → Look for mcp__atlassian__* tools
-   → If available: USE MCP BACKEND
+2. Are Atlassian MCP tools available?
+   → Look for mcp__claude_ai_Atlassian_Rovo__* in tool list
+   → YES: USE MCP BACKEND (references/mcp.md)
 
-3. If neither available:
-   → GUIDE USER TO SETUP
+3. Neither available?
+   → GUIDE USER TO SETUP (see "No Backend Available" below)
 ```
+
+**Deployment detection (critical for Cloud vs Server behavior):**
+
+```
+URL contains .atlassian.net  → Jira Cloud  → ADF required, accountId for users
+URL is self-hosted domain    → Server/DC   → Wiki markup OK, username for users
+MCP Rovo tools present       → Jira Cloud  → ADF required
+```
+
+See `references/cloud-vs-server.md` for full differences.
 
 | Backend | When to Use | Reference |
 |---------|-------------|-----------|
 | **CLI** | `jira` command available | `references/commands.md` |
 | **MCP** | Atlassian MCP tools available | `references/mcp.md` |
-| **None** | Neither available | Guide to install CLI |
+| **Neither** | Neither available | Guide to install CLI |
+
+---
+
+## Philosophy
+
+Jira is a shared workspace. Every action you take ripples outward — to watchers, to linked tickets, to sprint boards. Treat each operation as a deliberate edit to a team's shared record, not a personal note. Confirm before you change; verify after you do.
 
 ---
 
@@ -58,47 +101,56 @@ Natural language interaction with Jira. Supports multiple backends.
 
 | Intent | MCP Tool |
 |--------|----------|
-| Search issues | `mcp__atlassian__searchJiraIssuesUsingJql` |
-| View issue | `mcp__atlassian__getJiraIssue` |
-| Create issue | `mcp__atlassian__createJiraIssue` |
-| Update issue | `mcp__atlassian__editJiraIssue` |
-| Get transitions | `mcp__atlassian__getTransitionsForJiraIssue` |
-| Transition | `mcp__atlassian__transitionJiraIssue` |
-| Add comment | `mcp__atlassian__addCommentToJiraIssue` |
-| User lookup | `mcp__atlassian__lookupJiraAccountId` |
-| List projects | `mcp__atlassian__getVisibleJiraProjects` |
+| Search issues | `mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql` |
+| View issue | `mcp__claude_ai_Atlassian_Rovo__getJiraIssue` |
+| Create issue | `mcp__claude_ai_Atlassian_Rovo__createJiraIssue` |
+| Update issue | `mcp__claude_ai_Atlassian_Rovo__editJiraIssue` |
+| Get transitions | `mcp__claude_ai_Atlassian_Rovo__getTransitionsForJiraIssue` |
+| Transition | `mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue` |
+| Add comment | `mcp__claude_ai_Atlassian_Rovo__addCommentToJiraIssue` |
+| User lookup | `mcp__claude_ai_Atlassian_Rovo__lookupJiraAccountId` |
+| List projects | `mcp__claude_ai_Atlassian_Rovo__getVisibleJiraProjects` |
 
 See `references/mcp.md` for full MCP patterns.
 
 ---
 
-## Triggers
+## ADF Requirement (Jira Cloud)
 
-- "create a jira ticket"
-- "show me PROJ-123"
-- "list my tickets"
-- "move ticket to done"
-- "what's in the current sprint"
+Jira Cloud API v3 requires Atlassian Document Format (ADF) for `description` and `body` fields. Sending a plain string is silently ignored or causes a 400 error.
 
----
+**Minimal ADF for any description:**
+```json
+{
+  "type": "doc",
+  "version": 1,
+  "content": [
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Your description here"}
+      ]
+    }
+  ]
+}
+```
 
-## Issue Key Detection
+**When using MCP `createJiraIssue` or `editJiraIssue` on Cloud:** pass the description as ADF JSON, not a plain string.
 
-Issue keys follow the pattern: `[A-Z]+-[0-9]+` (e.g., PROJ-123, ABC-1).
+**When using the `jira` CLI:** the CLI handles format conversion internally — pass plain text or markdown normally.
 
-When a user mentions an issue key in conversation:
-- **CLI:** `jira issue view KEY` or `jira open KEY`
-- **MCP:** `mcp__atlassian__jira_get_issue` with the key
+See `references/cloud-vs-server.md` for more ADF examples (headings, bullets, code blocks).
 
 ---
 
 ## Workflow
 
 **Creating tickets:**
-1. Research context if user references code/tickets/PRs
-2. Draft ticket content
-3. Review with user
-4. Create using appropriate backend
+1. Detect deployment (Cloud vs Server) — determines description format
+2. Research context if user references code/tickets/PRs
+3. Draft ticket content (use ADF if Cloud + MCP)
+4. Review with user
+5. Create using appropriate backend
 
 **Updating tickets:**
 1. Fetch issue details first
@@ -109,33 +161,48 @@ When a user mentions an issue key in conversation:
 
 ---
 
-## Before Any Operation
+## NEVER
 
-Ask yourself:
+- **NEVER send a plain text string as `description` on Jira Cloud (MCP)** — Cloud API v3 requires ADF JSON. A plain string is silently discarded, creating a ticket with a blank description and no error message.
 
-1. **What's the current state?** — Always fetch the issue first. Don't assume status, assignee, or fields are what user thinks they are.
+- **NEVER transition without fetching current status first** — Workflows enforce intermediate states. "To Do" → "Done" silently fails if "In Progress" is required first. Always call `getTransitionsForJiraIssue` and pick from the returned list.
 
-2. **Who else is affected?** — Check watchers, linked issues, parent epics. A "simple edit" might notify 10 people.
+- **NEVER assign using a display name (MCP/Cloud)** — Only `accountId` works on Jira Cloud. Display names are silently accepted but the assignment is dropped. Call `lookupJiraAccountId` first.
 
-3. **Is this reversible?** — Transitions may have one-way gates. Some workflows require intermediate states. Description edits have no undo.
+- **NEVER edit a description without showing the original** — Jira has no undo for field edits. Fetch the current description, show it to the user, and confirm before replacing.
 
-4. **Do I have the right identifiers?** — Issue keys, transition IDs, account IDs. Display names don't work for assignment (MCP).
+- **NEVER use `/rest/api/3/` endpoints against a Server/Data Center instance** — Server only exposes v2. The request returns 404 with no helpful error. Check the URL — `.atlassian.net` = Cloud (v3); everything else = Server (v2).
+
+- **NEVER use `--no-input` (CLI) without first checking required fields** — Silently fails with cryptic output if project-required fields (e.g., story points, components) are missing. Run `jira issue create` interactively once on a new project to learn its required fields.
+
+- **NEVER assume transition names are universal** — "Done", "Closed", "Complete", "Resolved" vary by project workflow. A transition named "Done" in one project may be "Closed" in another. Always get available transitions for the specific issue.
+
+- **NEVER bulk-modify without explicit approval** — Each ticket update notifies all watchers independently. Editing 10 tickets sends 10 separate notification storms. Show the full list of affected tickets and get a single explicit go-ahead.
 
 ---
 
-## NEVER
+## When Things Go Wrong
 
-- **NEVER transition without fetching current status** — Workflows may require intermediate states. "To Do" → "Done" might fail silently if "In Progress" is required first.
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| `description` is blank after create (MCP Cloud) | Sent plain string instead of ADF | Retry with ADF JSON; see `references/cloud-vs-server.md` |
+| Transition fails silently | Missing intermediate state in workflow | Fetch transitions list; look for required intermediate step |
+| Assignment dropped (MCP) | Used display name instead of accountId | Call `lookupJiraAccountId`, use the returned ID |
+| `404` on REST call | Called v3 endpoint against Server instance | Switch to `/rest/api/2/`; Server does not expose v3 |
+| `400 Bad Request` on create | Required project field missing | Call `getJiraProjectIssueTypesMetadata` to see required fields |
+| `401 Unauthorized` (MCP) | MCP session expired | Run `/mcp` to reconnect Atlassian service |
+| `403 Forbidden` | Missing project permission | User needs Browse/Edit Project permission in Jira admin |
+| CLI `move` fails with unknown state | Transition name mismatch | Check exact names in that project's workflow; names are case-sensitive |
 
-- **NEVER assign using display name (MCP)** — Only account IDs work. Always call `lookupJiraAccountId` first, or assignment silently fails.
+---
 
-- **NEVER edit description without showing original** — Jira has no undo. User must see what they're replacing.
+## Issue Key Detection
 
-- **NEVER use `--no-input` without all required fields (CLI)** — Fails silently with cryptic errors. Check project's required fields first.
+Issue keys follow the pattern: `[A-Z]+-[0-9]+` (e.g., PROJ-123, ABC-1).
 
-- **NEVER assume transition names are universal** — "Done", "Closed", "Complete" vary by project. Always get available transitions first.
-
-- **NEVER bulk-modify without explicit approval** — Each ticket change notifies watchers. 10 edits = 10 notification storms.
+When a user mentions an issue key in conversation:
+- **CLI:** `jira issue view KEY` or `jira open KEY`
+- **MCP:** `mcp__claude_ai_Atlassian_Rovo__getJiraIssue` with the key
 
 ---
 
@@ -156,14 +223,15 @@ If neither CLI nor MCP is available, guide the user:
 ```
 To use Jira, you need one of:
 
-1. **jira CLI** (recommended):
+1. jira CLI (recommended):
    https://github.com/ankitpokhrel/jira-cli
 
    Install: brew install ankitpokhrel/jira-cli/jira-cli
    Setup:   jira init
 
-2. **Atlassian MCP**:
+2. Atlassian MCP:
    Configure in your MCP settings with Atlassian credentials.
+   Note: Atlassian MCP (Rovo) only supports Jira Cloud.
 ```
 
 ---
@@ -175,6 +243,7 @@ To use Jira, you need one of:
 - Building JQL queries beyond simple filters
 - Troubleshooting errors or authentication issues
 - Working with transitions, linking, or sprints
+- Targeting a specific deployment type (Cloud vs Server)
 
 **Do NOT load reference for:**
 - Simple view/list operations (Quick Reference above is sufficient)
@@ -185,11 +254,14 @@ To use Jira, you need one of:
 |------|-----------------|
 | View single issue | No |
 | List my tickets | No |
-| Create with description | **Yes** — CLI needs `/tmp` pattern |
-| Transition issue | **Yes** — need transition ID workflow |
-| JQL search | **Yes** — for complex queries |
-| Link issues | **Yes** — MCP limitation, need script |
+| Create with description (Cloud, MCP) | **Yes** — ADF format required (`cloud-vs-server.md`) |
+| Create with description (CLI) | **Yes** — CLI needs `/tmp` pattern (`commands.md`) |
+| Transition issue | **Yes** — need transition ID workflow (`mcp.md`) |
+| JQL search | **Yes** — for complex queries (`mcp.md`) |
+| Link issues | **Yes** — see `mcp.md` for link type details |
+| Cloud vs Server behavior | **Yes** — `references/cloud-vs-server.md` |
 
 References:
 - CLI patterns: `references/commands.md`
 - MCP patterns: `references/mcp.md`
+- Cloud vs Server: `references/cloud-vs-server.md`

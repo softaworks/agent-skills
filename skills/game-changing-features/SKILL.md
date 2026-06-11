@@ -1,264 +1,105 @@
 ---
 name: game-changing-features
-description: Find 10x product opportunities and high-leverage improvements. Use when user wants strategic product thinking, mentions '10x', wants to find high-impact features, or says 'what would make this 10x better', 'product strategy', or 'what should we build next'.
+description: "Structured opportunity analysis to surface 10x product leverage points — maps features against user pain tiers, competitive white space, and leverage-multiplier categories (network effects, automation, data moats). Use when deciding what to build next, evaluating feature ROI, or preparing a product strategy pitch. Outputs a prioritized opportunity matrix with rationale. Triggers: what should we build, game-changing feature, highest leverage improvement, product strategy, 10x opportunity."
 ---
 
-# 10x Mode
+# 10x Feature Strategy
 
-You are a product strategist with founder mentality. We're not here to add features—we're here to find the moves that 10x the product's value. Think like you own this. What would make users unable to live without it?
+## Mindset
 
-> **No Chat Output**: ALL responses go to `.claude/docs/ai/<product-or-area>/10x/session-N.md`
-> **No Code**: This is pure strategy. Implementation comes later.
+1. **The feature that changes everything is rarely the most-requested one.** Users request solutions to symptoms; the 10x move solves the underlying job. Look one level above what users ask for.
 
----
+2. **Small changes at high-frequency moments beat large changes at rare moments.** A 3-second save on a daily action compounds to 18 minutes/week. A major new feature used once a month might deliver less value. Always check frequency before estimating impact.
 
-## The Point
+3. **Defensibility is the hidden dimension of feature scoring.** A feature that's easy to copy gives you 6 months. A feature that gets better with usage data, network effects, or user-generated content gives you years. Weight defensibility heavily in bets.
 
-Most product work is incremental: fix bugs, add requested features, polish edges. That's necessary but not sufficient.
+4. **The "obviously good" idea is often the wrong one.** If the team immediately agrees it's a great idea, it's probably already on the competitor's roadmap. The best bets feel slightly uncomfortable — plausible but not obvious.
 
-This mode forces a different question: **What would make this 10x more valuable?**
+5. **Activation beats retention beats acquisition — always audit in this order.** Most teams chase acquisition features when the product is bleeding users at activation. Diagnosing which stage is broken first prevents shipping the wrong 10x feature.
 
-Not 10% better. Not "nice to have." Game-changing. The kind of thing that makes users say "how did I live without this?"
+## Navigation
 
----
+**Use this skill when**:
+- User wants strategic product thinking about what to build
+- User asks for "10x", "game-changing", "highest-leverage", or "what should we build next"
+- User needs to prioritize a feature backlog from a value lens
+- User wants to find quick wins with outsized impact
 
-## Session Setup
+**Do NOT use this skill when**:
+- User needs implementation plans or architecture (use `implementation-blueprint`)
+- User has already chosen a feature and needs a spec (use `dev-spec`)
+- User wants to stress-test a specific idea (use `critical-brainstorm`)
+- User asks a quick "what feature should I add" question expecting a single answer in chat — answer directly without full session workflow
 
-User provides:
-- **Product/Area**: What we're thinking about
-- **Current state** (optional): Brief description of what exists
-- **Constraints** (optional): Technical limits, timeline, team size
+**Quick calibration**:
+- If the user provides a product name and wants strategic analysis → run the full 5-step session, write output to `.claude/docs/ai/<product>/10x/session-N.md`
+- If the user asks a bounded question ("what's one quick win for our onboarding?") → answer in chat, no file write needed
+
+## Philosophy
+
+The goal is not to generate the longest feature list — it is to identify the one or two moves that change the product's trajectory. Every hour spent on a good-but-not-great feature is an hour not spent on the transformative one. Ruthless prioritization is the product.
+
+## NEVER
+
+- NEVER present a feature list without explicit stack-ranking — because an un-ranked list shifts the prioritization burden back to the team, which is the exact problem this skill exists to solve.
+- NEVER call a feature "10x" without specifying *what metric* it 10x's — because "10x better" without a denominator is motivational language, not strategy, and it misleads the team about the actual bet they're making.
+- NEVER include a feature idea that maps to "better UX" or "improved performance" without naming the specific interaction being changed — because vague ideas survive roadmap review without ever getting built or killed; they become permanent backlog debt.
+- NEVER score features on feasibility before scoring them on impact — because low feasibility scores kill transformative ideas before the team can find creative paths to ship them at reduced scope.
+- NEVER recommend a collaboration feature without first checking if the product's user base actually has teammates — because collaboration features in solo-use products have near-zero adoption and create the illusion of strategy without value.
+- NEVER output a session without at least one "Do Now" item that can ship in under 2 weeks — because sessions that produce only long-term bets are perceived as impractical and get shelved; an immediate win buys credibility for the bigger bets.
+- NEVER skip the activation/retention/acquisition diagnostic — because shipping an acquisition feature when users churn at onboarding is the single most common way product teams waste a full quarter on the wrong lever.
+
+## When Things Go Wrong
+
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| All ideas feel incremental, nothing feels 10x | Anchoring to current product shape; thinking in features not outcomes | Reframe: ask "what would make a user cancel a competitor to switch to us?" then reverse-engineer features from that answer |
+| Team rejects the top-ranked ideas as "too risky" | Feasibility was scored too early in the process; ideas not paired with risk mitigations | Re-evaluate with explicit "reduced scope" path: what's the smallest version that tests the hypothesis? |
+| User provides no context about the product | Can't research without a starting point | Ask exactly two questions: (1) What does the product do in one sentence? (2) Who is the primary user and what is their job? Then proceed. |
+| Output feels like a generic product advice column | Skill applied without reading the actual codebase or product | Stop and read: check existing feature list, recent commits, support tickets or feedback if available. Ground every idea in observed evidence. |
 
 ---
 
 ## Workflow
 
-### Step 1: Understand Current Value
+### Step 1: Diagnose the growth stage first
 
-Before proposing additions, understand what value exists:
+Before ideating, determine where the product is bleeding value:
+- **Activation problem**: Users sign up but don't reach the "aha moment"
+- **Retention problem**: Users activate but churn within 30-90 days
+- **Expansion problem**: Users stay but don't deepen usage or upgrade
+- **Acquisition problem**: Hard to bring new users in
 
-1. **What problem does this solve today?**
-2. **Who uses it and why?**
-3. **What's the core action users take?**
-4. **Where do users spend most time?**
-5. **What do users complain about / request most?**
+Features that fix the actual bottleneck outperform features that improve a healthy stage. If you can't diagnose, ask the user for churn timing data.
 
-Research the codebase, look at existing features, understand the shape of the product.
+### Step 2: Understand current value (from the product, not from memory)
 
-### Step 2: Find the 10x Opportunities
+Read the codebase or product description. Document:
+- What is the core action users take most?
+- Where do users spend the most time?
+- What does the product track or know about users that it doesn't surface?
 
-Think across three scales:
+### Step 3: Generate ideas across three scales
 
-#### Massive (High effort, transformative)
-Features that fundamentally expand what the product can do. New markets, new use cases, new capabilities that weren't possible before.
+- **Massive** (transformative, 3+ months): Opens new markets, new user segments, or fundamentally new capabilities
+- **Medium** (force multiplier, 1-2 months): Makes the core action dramatically faster/easier or turns casual users into power users
+- **Small gems** (disproportionate value, <2 weeks): Single interactions that eliminate daily friction or anxiety
 
-Ask:
-- What adjacent problem could we solve that would make this indispensable?
-- What would make this a platform instead of a tool?
-- What would make users bring their team/friends/family?
-- What's the feature that would make competitors nervous?
+For each scale, sweep all 10 opportunity categories → see [references/opportunity-categories.md](references/opportunity-categories.md)
 
-#### Medium (Moderate effort, high leverage)
-Features that significantly enhance the core experience. Force multipliers on what already works.
+### Step 4: Score on impact before feasibility
 
-Ask:
-- What would make the core action 10x faster/easier?
-- What data do we have that we're not using?
-- What workflow is painful that we could automate?
-- What would turn casual users into power users?
+For each idea, score in this order:
+1. Impact (how much more valuable does this make the product?)
+2. Reach (what % of users benefit?)
+3. Frequency (how often does the user encounter this value?)
+4. Defensibility (does this compound over time or is it copyable in 6 months?)
+5. Feasibility (only after scoring the above four)
 
-#### Small (Low effort, disproportionate value)
-Tiny changes that punch way above their weight. Often overlooked because they seem "too simple."
+### Step 5: Stack rank and write output
 
-Ask:
-- What single button/shortcut would save users minutes daily?
-- What information is users hunting for that we could surface?
-- What anxiety do users have that we could eliminate with one indicator?
-- What's the thing users do manually that we could remember/automate?
+Produce a prioritized list with at least one item in each tier: Do Now / Do Next / Strategic Bets / Backlog.
 
-### Step 3: Evaluate Ruthlessly
+Write full sessions to `.claude/docs/ai/<product>/10x/session-N.md` using the template in [references/opportunity-categories.md](references/opportunity-categories.md).
 
-For each idea, assess:
-
-| Criteria | Question |
-|----------|----------|
-| **Impact** | How much more valuable does this make the product? |
-| **Reach** | What % of users would this affect? |
-| **Frequency** | How often would users encounter this value? |
-| **Differentiation** | Does this set us apart or just match competitors? |
-| **Defensibility** | Is this easy to copy or does it compound over time? |
-| **Feasibility** | Can we actually build this? |
-
-Use a simple scoring:
-- 🔥 **Must do** — High impact, clearly worth it
-- 👍 **Strong** — Good impact, should prioritize
-- 🤔 **Maybe** — Interesting but needs more thought
-- ❌ **Pass** — Not worth it right now
-
-### Step 4: Identify the Highest-Leverage Moves
-
-Look for:
-
-**Quick wins with outsized impact**
-- Small effort, big value
-- Often overlooked because they're "obvious"
-- Can ship fast, validate fast
-
-**Strategic bets**
-- Larger effort, potentially transformative
-- Opens new possibilities
-- Worth the investment if it works
-
-**Compounding features**
-- Get more valuable over time
-- Network effects, data effects, habit formation
-- Build moats
-
-### Step 5: Prioritize
-
-Don't just list ideas—stack rank them:
-
-```
-## Recommended Priority
-
-### Do Now (Quick wins)
-1. [Feature] — Why: [reason], Impact: [what changes]
-
-### Do Next (High leverage)
-1. [Feature] — Why: [reason], Unlocks: [what becomes possible]
-
-### Explore (Strategic bets)
-1. [Feature] — Why: [reason], Risk: [what could go wrong], Upside: [what we gain]
-
-### Backlog (Good but not now)
-1. [Feature] — Why later: [reason]
-```
-
----
-
-## Idea Categories to Explore
-
-Force yourself through each category:
-
-| Category | Question | Example |
-|----------|----------|---------|
-| **Speed** | What takes too long? | Instant search, predictive loading |
-| **Automation** | What's repetitive? | Auto-scheduling, smart defaults |
-| **Intelligence** | What could be smarter? | Recommendations, anomaly detection |
-| **Integration** | What else do users use? | Calendar sync, export options |
-| **Collaboration** | How do users work together? | Sharing, comments, real-time |
-| **Personalization** | How is everyone different? | Custom views, preferences |
-| **Visibility** | What's hidden that shouldn't be? | Dashboards, progress tracking |
-| **Confidence** | What creates anxiety? | Confirmations, undo, previews |
-| **Delight** | What could spark joy? | Animations, celebrations, polish |
-| **Access** | Who can't use this yet? | Mobile, offline, accessibility |
-
----
-
-## Output Format
-
-```markdown
-# 10x Analysis: <Product/Area>
-Session N | Date: YYYY-MM-DD
-
-## Current Value
-What the product does today and for whom.
-
-## The Question
-What would make this 10x more valuable?
-
----
-
-## Massive Opportunities
-
-### 1. [Feature Name]
-**What**: Description
-**Why 10x**: Why this is transformative
-**Unlocks**: What becomes possible
-**Effort**: High/Very High
-**Risk**: What could go wrong
-**Score**: 🔥/👍/🤔/❌
-
-### 2. ...
-
----
-
-## Medium Opportunities
-
-### 1. [Feature Name]
-**What**: Description
-**Why 10x**: Why this matters more than it seems
-**Impact**: What changes for users
-**Effort**: Medium
-**Score**: 🔥/👍/🤔/❌
-
-### 2. ...
-
----
-
-## Small Gems
-
-### 1. [Feature Name]
-**What**: Description (one line)
-**Why powerful**: Why this punches above its weight
-**Effort**: Low
-**Score**: 🔥/👍/🤔/❌
-
-### 2. ...
-
----
-
-## Recommended Priority
-
-### Do Now
-1. ...
-
-### Do Next
-1. ...
-
-### Explore
-1. ...
-
----
-
-## Questions
-
-### Answered
-- **Q**: ... **A**: ...
-
-### Blockers
-- **Q**: ... (need user input)
-
-## Next Steps
-- [ ] Validate assumption: ...
-- [ ] Research: ...
-- [ ] Decide: ...
-```
-
----
-
-## Rules
-
-- **THINK BIG FIRST**—don't self-censor with "that's too hard." Capture the idea, evaluate later.
-- **SMALL CAN BE HUGE**—don't dismiss simple ideas. Sometimes one button changes everything.
-- **USER VALUE, NOT FEATURE COUNT**—10 features that add 1% each ≠ 1 feature that adds 10x.
-- **BE SPECIFIC**—"better UX" is not an idea. "One-click rescheduling from notification" is.
-- **QUESTION ASSUMPTIONS**—"users want X" may be wrong. What do they actually need?
-- **COMPOUND THINKING**—prefer features that get better over time.
-- **NO SAFE IDEAS**—if every idea is "obviously good," you're not thinking hard enough.
-- **CITE EVIDENCE**—if you saw something in the codebase or research, reference it.
-
----
-
-## Prompts to Unstick Thinking
-
-If stuck, ask yourself:
-
-- "What would make a user tell their friend about this?"
-- "What's the thing users do every day that's slightly annoying?"
-- "What would we build if we had 10x the engineering team? 1/10th?"
-- "What would a competitor need to build to beat us?"
-- "What do power users do manually that we could make native?"
-- "What's the insight we have from data that users don't see?"
-- "What would make this addictive (in a good way)?"
-- "What's the feature that sounds crazy but might work?"
+For quick single-question responses, answer in chat without file output.

@@ -6,7 +6,7 @@ Complete reference for Atlassian Jira operations via MCP.
 
 ### Search Operations
 
-#### `mcp__atlassian__searchJiraIssuesUsingJql`
+#### `mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql`
 Search Jira using JQL (Jira Query Language).
 
 **Parameters:**
@@ -17,12 +17,12 @@ Search Jira using JQL (Jira Query Language).
 
 **Example:**
 ```
-mcp__atlassian__searchJiraIssuesUsingJql(jql: "project = PROJ AND status = 'In Progress'")
+mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql(jql: "project = PROJ AND status = 'In Progress'")
 ```
 
 ### Issue Operations
 
-#### `mcp__atlassian__getJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__getJiraIssue`
 Retrieve full issue details by key.
 
 **Parameters:**
@@ -31,10 +31,10 @@ Retrieve full issue details by key.
 
 **Example:**
 ```
-mcp__atlassian__getJiraIssue(issueKey: "PROJ-123")
+mcp__claude_ai_Atlassian_Rovo__getJiraIssue(issueKey: "PROJ-123")
 ```
 
-#### `mcp__atlassian__createJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__createJiraIssue`
 Create a new issue.
 
 **Parameters:**
@@ -50,7 +50,7 @@ Create a new issue.
 
 **Example:**
 ```
-mcp__atlassian__createJiraIssue(
+mcp__claude_ai_Atlassian_Rovo__createJiraIssue(
   projectKey: "PROJ",
   issueType: "Story",
   summary: "Implement user authentication",
@@ -59,7 +59,7 @@ mcp__atlassian__createJiraIssue(
 )
 ```
 
-#### `mcp__atlassian__editJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__editJiraIssue`
 Update an existing issue.
 
 **Parameters:**
@@ -68,7 +68,7 @@ Update an existing issue.
 
 **Example:**
 ```
-mcp__atlassian__editJiraIssue(
+mcp__claude_ai_Atlassian_Rovo__editJiraIssue(
   issueKey: "PROJ-123",
   description: "Updated description with more details..."
 )
@@ -76,7 +76,7 @@ mcp__atlassian__editJiraIssue(
 
 ### Transition Operations
 
-#### `mcp__atlassian__getTransitionsForJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__getTransitionsForJiraIssue`
 Get available status transitions for an issue.
 
 **Parameters:**
@@ -84,7 +84,7 @@ Get available status transitions for an issue.
 
 **Returns:** List of available transitions with IDs and names.
 
-#### `mcp__atlassian__transitionJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue`
 Change issue status.
 
 **Parameters:**
@@ -99,7 +99,7 @@ Change issue status.
 
 ### Comment Operations
 
-#### `mcp__atlassian__addCommentToJiraIssue`
+#### `mcp__claude_ai_Atlassian_Rovo__addCommentToJiraIssue`
 Add a comment to an issue.
 
 **Parameters:**
@@ -108,7 +108,7 @@ Add a comment to an issue.
 
 ### User Operations
 
-#### `mcp__atlassian__lookupJiraAccountId`
+#### `mcp__claude_ai_Atlassian_Rovo__lookupJiraAccountId`
 Find user account ID for assignments.
 
 **Parameters:**
@@ -116,20 +116,20 @@ Find user account ID for assignments.
 
 **Example:**
 ```
-mcp__atlassian__lookupJiraAccountId(query: "user@example.com")
+mcp__claude_ai_Atlassian_Rovo__lookupJiraAccountId(query: "user@example.com")
 ```
 
 **Usage:** Always look up account IDs before assigning issues.
 
 ### Project Operations
 
-#### `mcp__atlassian__getVisibleJiraProjects`
+#### `mcp__claude_ai_Atlassian_Rovo__getVisibleJiraProjects`
 List available Jira projects.
 
 **Parameters:**
 - `maxResults`: Maximum results
 
-#### `mcp__atlassian__getJiraProjectIssueTypesMetadata`
+#### `mcp__claude_ai_Atlassian_Rovo__getJiraProjectIssueTypesMetadata`
 Get issue types and required fields for a project.
 
 **Parameters:**
@@ -137,7 +137,7 @@ Get issue types and required fields for a project.
 
 **Usage:** Call before creating issues to understand required fields.
 
-#### `mcp__atlassian__getJiraIssueTypeMetaWithFields`
+#### `mcp__claude_ai_Atlassian_Rovo__getJiraIssueTypeMetaWithFields`
 Get detailed field metadata for an issue type.
 
 **Parameters:**
@@ -272,7 +272,7 @@ resolved >= -7d AND project = PROJ ORDER BY resolved DESC
 ## Issue Linking
 
 ### Limitation
-The Atlassian MCP does not currently support creating issue links. Use the bundled `jira-link-issues` script instead.
+The Atlassian MCP does not currently support creating issue links. Use the `jira` CLI (`jira issue link`) or the Jira REST API directly.
 
 ### Link Types
 
@@ -284,17 +284,17 @@ The Atlassian MCP does not currently support creating issue links. Use the bundl
 | Clones | is cloned by | clones | Cloned issues |
 | Duplicates | is duplicated by | duplicates | Duplicate issues |
 
-### Script Usage
+### CLI Usage
 
 ```bash
 # Link PROJ-123 depends on PROJ-456
-~/.claude/skills/jira/jira-link-issues PROJ-123 PROJ-456 "Depends On"
+jira issue link PROJ-123 PROJ-456 "Depends On"
 
 # PROJ-100 blocks PROJ-200
-~/.claude/skills/jira/jira-link-issues PROJ-100 PROJ-200 "Blocks"
+jira issue link PROJ-100 PROJ-200 "Blocks"
 
 # General relationship
-~/.claude/skills/jira/jira-link-issues PROJ-50 PROJ-75 "Relates To"
+jira issue link PROJ-50 PROJ-75 "Relates To"
 ```
 
 ### Finding Link Types
@@ -406,19 +406,19 @@ Before creating issues:
 
 ```
 1. Get available transitions:
-   mcp__atlassian__getTransitionsForJiraIssue(issueKey: "PROJ-123")
+   mcp__claude_ai_Atlassian_Rovo__getTransitionsForJiraIssue(issueKey: "PROJ-123")
    → Returns list with transition IDs
 
 2. Find "Done" transition ID from response
 
 3. Execute transition:
-   mcp__atlassian__transitionJiraIssue(
+   mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue(
      issueKey: "PROJ-123",
      transitionId: "done_id"
    )
 
 4. Add comment:
-   mcp__atlassian__addCommentToJiraIssue(
+   mcp__claude_ai_Atlassian_Rovo__addCommentToJiraIssue(
      issueKey: "PROJ-123",
      body: "Completed and deployed"
    )
@@ -428,11 +428,11 @@ Before creating issues:
 
 ```
 1. Look up user account ID:
-   mcp__atlassian__lookupJiraAccountId(query: "john@example.com")
+   mcp__claude_ai_Atlassian_Rovo__lookupJiraAccountId(query: "john@example.com")
    → Returns account ID
 
 2. Create issue with assignment:
-   mcp__atlassian__createJiraIssue(
+   mcp__claude_ai_Atlassian_Rovo__createJiraIssue(
      projectKey: "PROJ",
      issueType: "Task",
      summary: "Implement feature X",
@@ -444,7 +444,7 @@ Before creating issues:
 ### List My In-Progress Issues
 
 ```
-mcp__atlassian__searchJiraIssuesUsingJql(
+mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql(
   jql: "assignee = currentUser() AND status = 'In Progress' ORDER BY updated DESC"
 )
 ```
@@ -453,13 +453,13 @@ mcp__atlassian__searchJiraIssuesUsingJql(
 
 ```
 1. List available projects:
-   mcp__atlassian__getVisibleJiraProjects()
+   mcp__claude_ai_Atlassian_Rovo__getVisibleJiraProjects()
 
 2. Get issue types for project:
-   mcp__atlassian__getJiraProjectIssueTypesMetadata(projectKey: "PROJ")
+   mcp__claude_ai_Atlassian_Rovo__getJiraProjectIssueTypesMetadata(projectKey: "PROJ")
 
 3. Create issue with correct type:
-   mcp__atlassian__createJiraIssue(
+   mcp__claude_ai_Atlassian_Rovo__createJiraIssue(
      projectKey: "PROJ",
      issueType: "Story",
      summary: "...",

@@ -45,7 +45,7 @@ Key features:
 
 ### 2. Text Formatting
 - Spaces: Use `_` or `-`
-- Newlines: Use `~n`
+- Newlines: Use `%0A` (URL-encoded newline; `~n` is NOT valid for memegen.link)
 - Special chars: `~q` (question), `~p` (percent), `~s` (slash), `~h` (hash)
 
 ### 3. Customization Options

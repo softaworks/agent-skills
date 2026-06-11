@@ -1,210 +1,174 @@
 ---
 name: command-creator
-description: This skill should be used when creating a Claude Code slash command. Use when users ask to "create a command", "make a slash command", "add a command", or want to document a workflow as a reusable command. Essential for creating optimized, agent-executable slash commands with proper structure and best practices.
+description: "Design and scaffold Claude Code slash commands (reusable workflow shortcuts invocable as /command-name). Covers prompt engineering for commands, parameter design, example cases, and command anti-patterns. Use when asked to automate a workflow as a slash command, create a /command, or turn a recurring prompt into a persistent tool. Triggers: slash command, create a command, /command-name pattern."
 ---
 
 # Command Creator
 
-This skill guides the creation of Claude Code slash commands - reusable workflows that can be invoked with `/command-name` in Claude Code conversations.
+This skill guides the creation of Claude Code slash commands — reusable workflows invoked with `/command-name` in Claude Code conversations.
+
+## Mindset
+
+Expert heuristics for command authorship:
+
+1. **Write for autonomy, not for humans.** Every instruction must be executable without clarifying questions. Vague steps ("check for errors") are failures — the agent will stall or hallucinate.
+2. **The description IS the interface.** The frontmatter `description` is what appears in `/help`. A weak description means no one invokes the command correctly. Write it as an imperative action statement.
+3. **Anti-patterns before steps.** Identify what NOT to do first. The costliest failures (batching todos, tool confusion, retry loops) come from omission, not malformed steps.
+4. **Pattern before content.** Choose a workflow pattern (Analyze→Act→Report, Run→Fix→Repeat, etc.) before writing a single instruction line. Mismatched pattern = structurally broken command.
+5. **Success criteria are mandatory, not optional.** A command without a defined stop condition will run forever or stop arbitrarily. Both are failures.
+
+## Navigation
+
+**Use this skill when:**
+- User asks to "create a command", "make a slash command", "add a command", "automate a workflow"
+- User says "I keep doing X, can we make a command for it?"
+- User wants to package a multi-step process for reuse
+- User wants project-specific or global automation
+
+**Do NOT use this skill when:**
+- User wants to run an existing command (just run it)
+- User wants to modify Claude's behavior via settings.json (use update-config skill)
+- User wants a script, not a slash command — scripts live in `scripts/`, not `.claude/commands/`
+
+**Decision tree — which pattern to recommend:**
+
+```
+Does the command fix/retry until passing?
+  YES → Iterative Fixing (Run→Parse→Fix→Repeat)
+  NO  → Does it coordinate multiple agents?
+          YES → Agent Delegation (Context→Delegate→Iterate)
+          NO  → Does it run one tool and return output?
+                  YES → Simple Execution (Parse→Execute→Report)
+                  NO  → Workflow Automation (Analyze→Act→Report)
+```
+
+**Location decision:**
+```
+Is user inside a git repo?
+  YES → .claude/commands/ (project-level)
+  NO  → ~/.claude/commands/ (global)
+User says "global"? → Always ~/.claude/commands/
+User says "project"? → Always .claude/commands/
+```
+
+## Philosophy
+
+Commands are not documentation — they are agent programs. Every line must be an unambiguous, executable instruction. Optimize for the agent that will run it cold, without prior context, at 3am on a CI failure.
+
+## NEVER
+
+Anti-patterns that silently break commands — each has a non-obvious failure mode:
+
+1. **NEVER use second-person ("you should", "you need to").** Agents parse imperative instructions; second-person triggers a reasoning mode that introduces hesitation and paraphrasing, causing drift from the intended steps.
+2. **NEVER omit a stop condition on iterative commands.** Without `max iterations: N` or stuck-detection logic, the agent enters an infinite loop on unfixable errors, burning context and never surfacing the root cause.
+3. **NEVER put anti-patterns only in reference files.** If the NEVER list isn't visible when the command is invoked, the agent never reads it. Critical constraints must be inline.
+4. **NEVER use underscores in command names** (`submit_stack` → broken). Claude Code uses the filename as the invocation key; underscores silently prevent the command from appearing in `/help`.
+5. **NEVER batch todo completions.** Marking all todos done at the end defeats progress tracking and means a mid-execution failure looks like success. Mark each todo complete immediately after its task finishes.
+6. **NEVER write vague description fields** (`description: A command for CI stuff`). The description is the only thing visible in `/help` — vague descriptions mean the command is never invoked for its intended purpose.
+7. **NEVER use the Task tool when Bash tool is correct** (and vice versa). Task tool spins up a subagent (expensive, for delegation). Bash tool runs commands directly. Using Task for `make lint` wastes context; using Bash for multi-agent orchestration silently drops agent specialization.
+
+## When Things Go Wrong
+
+| Symptom | Root Cause | Fix |
+|---|---|---|
+| Command never appears in `/help` | Filename uses underscores instead of hyphens | Rename file to `kebab-case.md` |
+| Agent asks clarifying questions mid-execution | Steps are vague or use second-person | Rewrite steps in imperative form with explicit expected outcomes |
+| Agent loops forever on CI failure | No stuck-detection or max-iteration guard | Add `If same error appears 3 times: STOP and report` |
+| Todos all marked done instantly | Instructions say "mark all complete at end" | Rewrite to mark each todo complete immediately after its step |
+| Wrong location (project vs global) | Auto-detect not run, or user intent not checked | Run `git rev-parse --is-inside-work-tree` first; confirm with user |
+| Command breaks on some machines | Hard-coded absolute paths in command body | Use relative paths or environment variables |
 
 ## About Slash Commands
 
-Slash commands are markdown files stored in `.claude/commands/` (project-level) or `~/.claude/commands/` (global/user-level) that get expanded into prompts when invoked. They're ideal for:
+Slash commands are markdown files stored in `.claude/commands/` (project-level) or `~/.claude/commands/` (global/user-level) that get expanded into prompts when invoked. They are ideal for:
 
 - Repetitive workflows (code review, PR submission, CI fixing)
 - Multi-step processes that need consistency
 - Agent delegation patterns
 - Project-specific automation
 
-## When to Use This Skill
-
-Invoke this skill when users:
-
-- Ask to "create a command" or "make a slash command"
-- Want to automate a repetitive workflow
-- Need to document a consistent process for reuse
-- Say "I keep doing X, can we make a command for it?"
-- Want to create project-specific or global commands
-
 ## Bundled Resources
 
-This skill includes reference documentation for detailed guidance:
+Load these references when needed — do not load all upfront:
 
-- **references/patterns.md** - Command patterns (workflow automation, iterative fixing, agent delegation, simple execution)
-- **references/examples.md** - Real command examples with full source (submit-stack, ensure-ci, create-implementation-plan)
-- **references/best-practices.md** - Quality checklist, common pitfalls, writing guidelines, template structure
-
-Load these references as needed when creating commands to understand patterns, see examples, or ensure quality.
-
-## Command Structure Overview
-
-Every slash command is a markdown file with:
-
-```markdown
----
-description: Brief description shown in /help (required)
-argument-hint: <placeholder> (optional, if command takes arguments)
----
-
-# Command Title
-
-[Detailed instructions for the agent to execute autonomously]
-```
+- **references/patterns.md** — Command patterns with decision guides (Workflow Automation, Iterative Fixing, Agent Delegation, Simple Execution)
+- **references/examples.md** — Full source for real commands (submit-stack, ensure-ci, create-implementation-plan)
+- **references/best-practices.md** — Quality checklist, writing guidelines, template structure, advanced patterns
 
 ## Command Creation Workflow
 
 ### Step 1: Determine Location
 
-**Auto-detect the appropriate location:**
+Auto-detect the appropriate location:
 
 1. Check git repository status: `git rev-parse --is-inside-work-tree 2>/dev/null`
-2. Default location:
-   - If in git repo → Project-level: `.claude/commands/`
-   - If not in git repo → Global: `~/.claude/commands/`
-3. Allow user override:
-   - If user explicitly mentions "global" or "user-level" → Use `~/.claude/commands/`
-   - If user explicitly mentions "project" or "project-level" → Use `.claude/commands/`
+2. Default:
+   - In git repo → Project-level: `.claude/commands/`
+   - Not in git repo → Global: `~/.claude/commands/`
+3. Override: if user says "global" → `~/.claude/commands/`; if user says "project" → `.claude/commands/`
 
-Report the chosen location to the user before proceeding.
+Report chosen location before proceeding.
 
-### Step 2: Show Command Patterns
+### Step 2: Select Pattern
 
-Help the user understand different command types. Load **references/patterns.md** to see available patterns:
-
-- **Workflow Automation** - Analyze → Act → Report (e.g., submit-stack)
-- **Iterative Fixing** - Run → Parse → Fix → Repeat (e.g., ensure-ci)
-- **Agent Delegation** - Context → Delegate → Iterate (e.g., create-implementation-plan)
-- **Simple Execution** - Run command with args (e.g., codex-review)
-
-Ask the user: "Which pattern is closest to what you want to create?" This helps frame the conversation.
+Load **references/patterns.md** and use the decision tree above to recommend a pattern. Ask: "Which pattern is closest to what you want to create?" before writing a single instruction.
 
 ### Step 3: Gather Command Information
 
-Ask the user for key information:
+#### A. Name and Purpose
 
-#### A. Command Name and Purpose
-
-Ask:
-
-- "What should the command be called?" (for filename)
-- "What does this command do?" (for description field)
-
-Guidelines:
-
-- Command names MUST be kebab-case (hyphens, NOT underscores)
-  - ✅ CORRECT: `submit-stack`, `ensure-ci`, `create-from-plan`
-  - ❌ WRONG: `submit_stack`, `ensure_ci`, `create_from_plan`
-- File names match command names: `my-command.md` → invoked as `/my-command`
-- Description should be concise, action-oriented (appears in `/help` output)
+- Command name: kebab-case only (`submit-stack` ✅, `submit_stack` ❌)
+- Description: imperative, action-oriented, for `/help` output
 
 #### B. Arguments
 
-Ask:
-
-- "Does this command take any arguments?"
-- "Are arguments required or optional?"
-- "What should arguments represent?"
-
-If command takes arguments:
-
-- Add `argument-hint: <placeholder>` to frontmatter
-- Use `<angle-brackets>` for required arguments
-- Use `[square-brackets]` for optional arguments
+- Does the command take arguments? Required or optional?
+- `argument-hint: <required>` or `argument-hint: [optional]` in frontmatter
 
 #### C. Workflow Steps
 
-Ask:
-
-- "What are the specific steps this command should follow?"
-- "What order should they happen in?"
-- "What tools or commands should be used?"
-
-Gather details about:
-
-- Initial analysis or checks to perform
-- Main actions to take
-- How to handle results
-- Success criteria
+- Initial checks (file existence, git status)
+- Main actions and tool choices
 - Error handling approach
+- Success criteria and stop conditions
 
-#### D. Tool Restrictions and Guidance
+#### D. Tool Restrictions
 
-Ask:
-
-- "Should this command use any specific agents or tools?"
-- "Are there any tools or operations it should avoid?"
-- "Should it read any specific files for context?"
+- Which tools to use (Bash vs Task vs Edit)
+- Which tools to explicitly prohibit
+- Any files to read for context
 
 ### Step 4: Generate Optimized Command
 
-Create the command file with agent-optimized instructions. Load **references/best-practices.md** for:
+Load **references/best-practices.md** before writing. Apply:
 
-- Template structure
-- Best practices for agent execution
-- Writing style guidelines
-- Quality checklist
-
-Key principles:
-
-- Use imperative/infinitive form (verb-first instructions)
-- Be explicit and specific
-- Include expected outcomes
-- Provide concrete examples
-- Define clear error handling
+- Imperative/infinitive form (verb-first, never "you should")
+- Explicit tool names per step
+- Expected outcomes after each action
+- Realistic examples (not foo/bar)
+- Error handling with specific recovery actions
+- Clear stop conditions
 
 ### Step 5: Create the Command File
 
-1. Determine full file path:
-   - Project: `.claude/commands/[command-name].md`
-   - Global: `~/.claude/commands/[command-name].md`
-
-2. Ensure directory exists:
-
-   ```bash
-   mkdir -p [directory-path]
-   ```
-
+1. Determine full file path (project: `.claude/commands/[name].md`, global: `~/.claude/commands/[name].md`)
+2. Ensure directory exists: `mkdir -p [directory-path]`
 3. Write the command file using the Write tool
-
-4. Confirm with user:
-   - Report the file location
-   - Summarize what the command does
-   - Explain how to use it: `/command-name [arguments]`
+4. Confirm with user: file location, what it does, how to invoke it
 
 ### Step 6: Test and Iterate (Optional)
 
-If the user wants to test:
+Suggest: `You can test this command by running: /command-name [arguments]`
 
-1. Suggest testing: `You can test this command by running: /command-name [arguments]`
-2. Be ready to iterate based on feedback
-3. Update the file with improvements as needed
-
-## Quick Tips
-
-**For detailed guidance, load the bundled references:**
-
-- Load **references/patterns.md** when designing the command workflow
-- Load **references/examples.md** to see how existing commands are structured
-- Load **references/best-practices.md** before finalizing to ensure quality
-
-**Common patterns to remember:**
-
-- Use Bash tool for `pytest`, `pyright`, `ruff`, `prettier`, `make`, `gt` commands
-- Use Task tool to invoke subagents for specialized tasks
-- Check for specific files first (e.g., `.PLAN.md`) before proceeding
-- Mark todos complete immediately, not in batches
-- Include explicit error handling instructions
-- Define clear success criteria
+Be ready to iterate on feedback and update the file.
 
 ## Summary
 
-When creating a command:
-
-1. **Detect location** (project vs global)
-2. **Show patterns** to frame the conversation
+1. **Detect location** (project vs global, confirm with user)
+2. **Select pattern** using decision tree before writing
 3. **Gather information** (name, purpose, arguments, steps, tools)
 4. **Generate optimized command** with agent-executable instructions
 5. **Create file** at appropriate location
 6. **Confirm and iterate** as needed
 
-Focus on creating commands that agents can execute autonomously, with clear steps, explicit tool usage, and proper error handling.
+Focus on creating commands that agents can execute autonomously, with unambiguous steps, explicit tool usage, inline anti-patterns, and defined stop conditions.

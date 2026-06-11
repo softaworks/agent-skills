@@ -1,237 +1,127 @@
 ---
 name: marp-slide
-description: Create professional Marp presentation slides with 7 beautiful themes (default, minimal, colorful, dark, gradient, tech, business). Use when users request slide creation, presentations, or Marp documents. Supports custom themes, image layouts, and "make it look good" requests with automatic quality improvements.
+description: Create professional Marp presentation slides with 7 built-in themes (default, minimal, colorful, dark, gradient, tech, business). Use when users request slides, presentations, Marp documents, or say "make it look good", "かっこよく", "良い感じに". Supports custom themes, image layouts, and vague aesthetic improvement requests.
 ---
 
 # Marp Slide Creator
 
-Create professional, visually appealing Marp presentation slides with 7 pre-designed themes and built-in best practices.
+## Mindset
 
-## When to Use This Skill
+1. **Marp is a renderer, not an editor** — every directive, class name, and image keyword you write is parsed by a CSS engine. Typos render silently wrong, not with errors. Validate by mental-rendering each slide before outputting.
+2. **One slide = one claim** — if you need more than 5 bullets to cover a slide's topic, it's two slides. Density kills presentation slides; practitioners split aggressively.
+3. **CSS in templates is load-bearing** — the embedded `<style>` block in each template is what makes the theme work. Stripping or moving it breaks every slide. Copy the whole template block, then replace content only.
+4. **`bg` images live on a separate layer** — `![bg right:40%](img.png)` is not an inline image; it's a CSS background panel. Placing it after bullets instead of before them doesn't change the layout — position in the markdown file is irrelevant for `bg` images; only the keyword matters.
+5. **Frontmatter drives the output format** — `size: 16:9` vs `4:3` changes every margin calculation downstream. Choose before writing content, not after.
 
-Use this skill when the user:
-- Requests to create presentation slides or Marp documents
-- Asks to "make slides look good" or "improve slide design"
-- Provides vague instructions like "良い感じにして" (make it nice) or "かっこよく" (make it cool)
-- Wants to create lecture or seminar materials
-- Needs bullet-point focused slides with occasional images
+## Navigation
 
-## Quick Start
+**Use this skill when**: user asks to create slides, a presentation, or a Marp `.md` file; user says "make it look good", "かっこよく", "良い感じに"; user provides raw content and wants it formatted as slides.
 
-### Step 1: Select Theme
+**Do NOT use this skill when**: user wants a static document or report (use standard markdown); user explicitly wants PowerPoint `.pptx` without Marp pipeline; user wants interactive web animations.
 
-First, determine the appropriate theme based on the user's request and content.
+**Quick theme decision**:
+- Technical / code / developer → `tech` or `dark`
+- Business / corporate / proposal → `business`
+- Academic / content-first → `minimal`
+- Creative / event / youth → `colorful` or `gradient`
+- General / unsure → `default`
 
-**Quick theme selection:**
-- **Technical/Developer content** → tech theme
-- **Business/Corporate** → business theme
-- **Creative/Event** → colorful or gradient theme
-- **Academic/Simple** → minimal theme
-- **General/Unsure** → default theme
-- **Dark background preferred** → dark or tech theme
+## Philosophy
 
-For detailed theme selection guidance, read `references/theme-selection.md`.
+Every slide is a contract with the audience: one idea, clearly stated, visually uncluttered. The theme provides the visual contract; your job is to enforce the content contract — no slide should require the speaker to explain what the slide is about before explaining what it means.
 
-### Step 2: Create Slides
+## NEVER
 
-1. **Read relevant references first**:
-   - Always start by reading `references/marp-syntax.md` for basic syntax
-   - For images: `references/image-patterns.md` (official Marpit image syntax)
-   - For advanced features (math, emoji): `references/advanced-features.md`
-   - For custom themes: `references/theme-css-guide.md`
+- NEVER use `---` as a slide separator *inside* a fenced code block — because Marp's parser is line-level and will split the slide mid-code-block, destroying the fence and producing broken HTML output.
+- NEVER embed raw `<style>` overrides that redefine `section` padding below `40px` — because Marp's built-in themes size all content assuming the default section padding; reducing it causes text to collide with page-number badges and header/footer elements at export time.
+- NEVER use standard Markdown image syntax `![](img.png)` when you mean a background split — because without the `bg` keyword the image renders inline as a content-layer element, not as the CSS background panel, producing a broken layout that looks correct in VS Code preview but wrong in PDF/PPTX export.
+- NEVER put `<!-- _class: lead -->` on non-title slides to center content — because `lead` is a semantic class that also suppresses the slide's h2 border/decoration in most themes; using it on content slides silently removes structural styling mid-deck.
+- NEVER use `paginate: true` at the global level without also suppressing it on the title slide with `<!-- _paginate: false -->` — because page "1" printed on the title slide confuses audiences and is a practitioner tell that the author didn't check the output.
+- NEVER mix `*` (asterisk) unordered list bullets and `-` (dash) bullets on the same slide — because `*` activates Marp's **fragmented list** feature (progressive reveal in HTML mode), while `-` does not; mixing them produces one list that partially animates and one that doesn't, with no visual warning.
+- NEVER use `backgroundImage: url(...)` in frontmatter when your theme template already sets a background via CSS — because the frontmatter directive takes precedence over theme CSS, wiping the theme's gradient/texture and making the slide look unstyled even though it parsed correctly.
 
-2. Copy content from the appropriate template file:
-   - `assets/template-basic.md` - Default theme (most common)
-   - `assets/template-minimal.md` - Minimal theme
-   - `assets/template-colorful.md` - Colorful theme
-   - `assets/template-dark.md` - Dark mode theme
-   - `assets/template-gradient.md` - Gradient theme
-   - `assets/template-tech.md` - Tech/code theme
-   - `assets/template-business.md` - Business theme
+## When Things Go Wrong
 
-3. Read `references/best-practices.md` for quality guidelines
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Slide splits mid-code-block | `---` separator inside fenced block | Move `---` outside the fence; use `<!-- -->` comment as visual break inside the block instead |
+| Background image covers all text | Missing `left`/`right` keyword on `![bg]` | Add `![bg right:40%]` to reserve text space; without directional keyword, `bg` is full-bleed |
+| Theme styling gone after edit | `<style>` block accidentally deleted | Re-copy the style block from the template in `assets/template-{theme}.md` |
+| Page numbers on title slide | `paginate: true` global, no per-slide override | Add `<!-- _paginate: false -->` immediately after the title slide's opening `---` |
+| Bullets animate unexpectedly in HTML | Mixed `*` and `-` list markers | Standardize all lists to `-`; reserve `*` only when progressive reveal is intentional |
+| Math formula renders as raw text | `marp: true` missing from frontmatter | Ensure frontmatter is present and `marp: true` is set; math requires Marp Core to activate KaTeX |
 
-4. Structure content following best practices:
-   - Title slide with `<!-- _class: lead -->`
-   - Concise h2 titles (5-7 characters in Japanese)
-   - 3-5 bullet points per slide
-   - Adequate whitespace
+## Workflow
 
-5. Add images if needed using patterns from `references/image-patterns.md`
+**1. Select theme** using the decision tree in Navigation above. If the user gave vague aesthetic instructions, infer from content domain.
 
-6. Save to `/mnt/user-data/outputs/` with `.md` extension
+**2. Copy the full template** from `assets/template-{theme}.md` — do not reconstruct from scratch. The embedded CSS is non-trivial.
 
-## Available Themes
-
-### 1. Default Theme
-**Colors**: Beige background, navy text, blue headings
-**Style**: Clean, sophisticated with decorative lines
-**Use for**: General seminars, lectures, presentations
-**Template**: `template-basic.md`
-
-### 2. Minimal Theme
-**Colors**: White background, gray text, black headings
-**Style**: Minimal decoration, wide margins, light fonts
-**Use for**: Content-focused presentations, academic talks
-**Template**: `template-minimal.md`
-
-### 3. Colorful & Pop Theme
-**Colors**: Pink gradient background, multi-color accents
-**Style**: Vibrant gradients, bold fonts, rainbow accents
-**Use for**: Youth-oriented events, creative projects
-**Template**: `template-colorful.md`
-
-### 4. Dark Mode Theme
-**Colors**: Black background, cyan/purple accents
-**Style**: Dark theme with glow effects, eye-friendly
-**Use for**: Tech presentations, evening talks, modern look
-**Template**: `template-dark.md`
-
-### 5. Gradient Background Theme
-**Colors**: Purple/pink/blue/green gradients (varies per slide)
-**Style**: Different gradient per slide, white text, shadows
-**Use for**: Visual-focused, creative presentations
-**Template**: `template-gradient.md`
-
-### 6. Tech/Code Theme
-**Colors**: GitHub-style dark background, blue/green accents
-**Style**: Code fonts, Markdown-style headers with # symbols
-**Use for**: Programming tutorials, tech meetups, developer content
-**Template**: `template-tech.md`
-
-### 7. Business Theme
-**Colors**: White background, navy headings, blue accents
-**Style**: Corporate presentation style, top border, table support
-**Use for**: Business presentations, proposals, reports
-**Template**: `template-business.md`
-
-## Creating Slides Process
-
-### Basic Workflow
-
-1. **Understand requirements**
-   - Identify content: title, topics, key points
-   - Determine target audience
-   - Assess formality level
-
-2. **Select theme**
-   - Use quick selection rules above
-   - If uncertain, consult `references/theme-selection.md`
-   - Default to default theme if still unsure
-
-3. **Apply template**
-   - Load appropriate template from `assets/`
-   - CSS is already embedded - no external files needed
-   - Maintain template structure
-
-4. **Structure content**
-   - Title slide: `<!-- _class: lead -->` + h1
-   - Content slides: h2 title + bullet points
-   - Keep titles to 5-7 characters (Japanese)
-   - Use 3-5 bullet points per slide
-
-5. **Refine quality**
-   - Read `references/best-practices.md`
-   - Ensure adequate whitespace
-   - Maintain consistency
-   - Keep text concise (15-25 chars per line)
-
-6. **Add images**
-   - If needed, consult `references/image-patterns.md`
-   - Common: `![bg right:40%](image.png)` for side images
-   - Use proper Marp image syntax
-
-7. **Output file**
-   - Save to `/mnt/user-data/outputs/`
-   - Use descriptive filename like `presentation.md`
-
-## Handling "Make It Look Good" Requests
-
-When users give vague instructions like "良い感じにして", "かっこよく", or "make it cool":
-
-1. **Infer theme from content**:
-   - Business content → business theme
-   - Technical content → tech or dark theme
-   - Creative content → gradient or colorful theme
-   - General → default theme
-
-2. **Apply best practices automatically**:
-   - Shorten titles to 5-7 characters
-   - Limit bullet points to 3-5 items
-   - Add adequate whitespace
-   - Use consistent structure
-
-3. **Enhance visual hierarchy**:
-   - Use h3 for sub-sections when appropriate
-   - Break up dense text into multiple slides
-   - Ensure logical flow (intro → body → conclusion)
-
-4. **Maintain professional tone**:
-   - Match formality to content
-   - Use parallel structure in lists
-   - Keep technical terms consistent
-
-## Image Integration
-
-For slides with images, consult `references/image-patterns.md` for detailed syntax.
-
-Common patterns:
-- **Side image**: `![bg right:40%](image.png)` - Image on right, text on left
-- **Centered**: `![w:600px](image.png)` - Centered with specific width
-- **Full background**: `![bg](image.png)` - Full-screen background
-- **Multiple images**: Multiple `![bg]` declarations
-
-Example lecture pattern:
+**3. Set frontmatter**:
 ```markdown
-## Slide Title
+---
+marp: true
+theme: default   # or the chosen theme name
+size: 16:9
+paginate: true
+---
+```
+
+**4. Title slide** (always first):
+```markdown
+<!-- _class: lead -->
+<!-- _paginate: false -->
+
+# Presentation Title
+
+Presenter · Date
+```
+
+**5. Content slides** — enforce 1 message per slide, 3–5 bullets, concise h2 titles:
+```markdown
+---
+
+## Short Title
+
+- Point one (parallel structure)
+- Point two
+- Point three
+```
+
+**6. Image slides** — read `references/image-patterns.md` before using any `bg` syntax:
+```markdown
+---
+
+## Feature Overview
 
 ![bg right:40%](diagram.png)
 
-- Explanation point 1
-- Explanation point 2
-- Explanation point 3
+- Explanation 1
+- Explanation 2
 ```
 
-## File Output
+**7. Save** to `/mnt/user-data/outputs/` with `.md` extension.
 
-Always save the final Marp file to `/mnt/user-data/outputs/` with `.md` extension:
-- `presentation.md`
-- `seminar-slides.md`
-- `lecture-materials.md`
+## Reference Loading Triggers
 
-## Quality Checklist
+Load these files only when needed — they are large:
 
-Before delivering slides, verify:
-- [ ] Theme selected appropriately for content
-- [ ] CSS theme is embedded in the file
-- [ ] Title slide uses `<!-- _class: lead -->`
-- [ ] All h2 titles are concise (5-7 chars)
-- [ ] Bullet points are 3-5 items per slide
-- [ ] Images use proper Marp syntax
-- [ ] File saved to outputs directory
-- [ ] Content follows best practices
+| Trigger | File to read |
+|---------|-------------|
+| Custom theme request, CSS questions | `references/theme-css-guide.md` |
+| Any `bg`, filter, or split-screen image | `references/image-patterns.md` |
+| Math formulas, emoji, fragmented lists | `references/advanced-features.md` |
+| Official theme names (`gaia`, `uncover`) | `references/official-themes.md` |
+| Theme selection uncertainty | `references/theme-selection.md` |
+| Quality review / "make it better" | `references/best-practices.md` |
 
-## References
+## Quality Gate
 
-### Core Documentation
-- **Marp syntax**: `references/marp-syntax.md` - Basic Marp/Marpit syntax (directives, frontmatter, pagination, etc.)
-- **Image patterns**: `references/image-patterns.md` - Official image syntax (bg, filters, split backgrounds)
-- **Theme CSS guide**: `references/theme-css-guide.md` - How to create custom themes based on Marpit specification
-- **Advanced features**: `references/advanced-features.md` - Math, emoji, fragmented lists, Marp CLI, VS Code
-- **Official themes**: `references/official-themes.md` - default, gaia, uncover themes documentation
-
-### Quality & Selection Guides
-- **Theme selection**: `references/theme-selection.md` - How to choose the right theme for content
-- **Best practices**: `references/best-practices.md` - Quality guidelines for "cool" slides
-
-### Templates & Assets
-- **Templates**: `assets/template-*.md` - Starting points with embedded CSS for each theme (7 themes)
-- **Standalone CSS**: `assets/theme-*.css` - CSS files for reference (already embedded in templates)
-
-### Official External Links
-- **Marp Official Site**: https://marp.app/
-- **Marpit Directives**: https://marpit.marp.app/directives
-- **Marpit Image Syntax**: https://marpit.marp.app/image-syntax
-- **Marpit Theme CSS**: https://marpit.marp.app/theme-css
-- **Marp Core GitHub**: https://github.com/marp-team/marp-core
-- **Marp CLI GitHub**: https://github.com/marp-team/marp-cli
+Before delivering, verify:
+- [ ] `marp: true` in frontmatter
+- [ ] Title slide has `<!-- _class: lead -->` and `<!-- _paginate: false -->`
+- [ ] No `---` separators inside code fences
+- [ ] All `bg` images use directional keyword if text coexists on slide
+- [ ] List markers consistent (`-` only unless progressive reveal intended)
+- [ ] CSS `<style>` block intact from template
+- [ ] File saved to `/mnt/user-data/outputs/`

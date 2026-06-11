@@ -1,11 +1,96 @@
 ---
 name: gepetto
-description: Creates detailed, sectionized implementation plans through research, stakeholder interviews, and multi-LLM review. Use when planning features that need thorough pre-implementation analysis.
+description: Creates detailed, sectionized implementation plans through research, stakeholder interviews, and multi-LLM review. Use when planning a feature, refactor, or system that needs thorough pre-implementation analysis before coding begins. Trigger phrases: "make a plan", "plan this out", "help me plan", "create an implementation plan", "I need to think through", "architect this".
 ---
 
 # Gepetto
 
 Orchestrates a multi-step planning process: Research → Interview → Spec Synthesis → Plan → External Review → Sections
+
+## Mindset
+
+1. **You are the architect, not a transcriptionist.** The user's spec is a starting point — your job is to surface what they haven't thought about yet: failure modes, scaling inflection points, security implications, operational costs. A plan that only restates the spec is worthless.
+
+2. **Sections are contracts, not outlines.** Each section file must be so self-contained that a developer with zero context could implement it correctly. If a section requires reading another document to understand, rewrite it.
+
+3. **External review is adversarial by design.** Gemini and Codex are not validators — they are red teamers. Weight their critiques seriously; integrate at least one substantive finding from each reviewer or explicitly document why you rejected it.
+
+4. **Resume fidelity beats speed.** Gepetto writes intermediate files precisely so work survives interruption. Never skip writing a step's output file even if you believe you'll complete the workflow in one session — the user may interrupt, context may compact, or a subagent may fail.
+
+5. **The interview is the highest-leverage step.** Bad interview → bad spec → bad plan → wasted sections. Spend more time here than feels comfortable. Ask the follow-up question, not just the surface question.
+
+---
+
+## Navigation
+
+### Use Gepetto when:
+- Building something that will take more than one session to implement
+- The requirements are ambiguous, contradictory, or incomplete
+- Multiple architectural approaches are viable and the tradeoffs matter
+- The user wants autonomous implementation via ralph-loop or Ralphy afterward
+- A feature touches multiple layers (DB, API, UI, infra) and coordination matters
+- Technical risk is high enough that an external review catch is worth the time
+
+### Do NOT use Gepetto when:
+- The task is a single-file edit or a bug fix with a known cause — just fix it
+- The user said "just do it" or "go ahead and implement" — they want code, not a plan
+- The spec is already a detailed implementation plan — start coding or use a simpler skill
+- Time is critical and the user explicitly wants the fastest path to working code
+- The feature is a trivial CRUD endpoint or boilerplate scaffold with no novel decisions
+- The codebase has a strong, opinionated framework that answers all design questions
+
+### Decision tree:
+
+```
+Is the work completable in < 30 minutes of focused implementation?
+  YES → Skip Gepetto, implement directly
+  NO  → Is the design space genuinely open (multiple valid architectures)?
+          NO  → Is a plan needed for coordination / review / autonomous execution?
+                  NO  → Skip Gepetto, implement directly
+                  YES → Run Gepetto
+          YES → Run Gepetto
+```
+
+---
+
+## Philosophy
+
+A plan that takes one hour to write and saves five hours of re-implementation is the best investment in software. Gepetto exists because the cost of unclear requirements is always paid — either up front in planning or later in rework. Make the user pay it consciously, up front, with full information.
+
+---
+
+## NEVER
+
+- **NEVER skip the interview to save time.** The interview is where hidden requirements surface. A plan built without it encodes the author's assumptions, not the user's needs. Every skipped interview results in at least one surprise rework in the sections phase.
+
+- **NEVER have subagents write intermediate files directly.** Subagents write in parallel and race. If two subagents both write `claude-research.md`, the last writer wins and findings are lost. All file writes belong to the main context after collecting subagent results.
+
+- **NEVER integrate all external reviewer suggestions uncritically.** Gemini and Codex optimize for generic best practices, not for the user's constraints. A suggestion to "add Redis for caching" may be architecturally correct but operationally wrong for a solo developer with no Redis budget. Document what you rejected and why — silence implies you didn't read the review.
+
+- **NEVER create section files without writing `sections/index.md` first.** The SECTION_MANIFEST in `index.md` is the authoritative list; everything else is derived from it. Writing section files before the manifest means you have no ground truth for resume detection or for ralph-loop orchestration.
+
+- **NEVER produce a section file that says "see claude-plan.md for details."** Section files are implementation contracts. If the implementer must cross-reference the main plan, the section is incomplete. Duplicate context aggressively — it is cheap compared to a developer making wrong assumptions.
+
+- **NEVER ask yes/no questions in the interview.** "Is authentication required?" gives you a one-bit answer. "What happens when a user's session expires mid-transaction?" forces the user to think through the edge case. The difference is a section on session recovery versus a silent data loss bug.
+
+- **NEVER run Gepetto on an already-in-progress implementation without first checking for existing planning files.** Overwriting `claude-plan.md` on a partial implementation destroys the resume chain. Always scan for existing files and enter resume mode if any are found.
+
+---
+
+## When Things Go Wrong
+
+| Scenario | Diagnosis | Recovery |
+|----------|-----------|----------|
+| External reviewer CLI not found | gemini/codex not installed or not on PATH | Skip that reviewer, note in output, proceed with one review or zero; document in integration notes |
+| Subagent times out during section writing | Large plan or slow model | Re-run only missing sections — check SECTION_MANIFEST against existing files and launch Tasks only for gaps |
+| User edits claude-plan.md mid-workflow | Plan content diverged from spec/interview | Re-read the edited plan before step 13; the user's edits are authoritative, do not revert them |
+| Interview produces contradictory requirements | User said X in Q3 and not-X in Q7 | Surface the contradiction explicitly before writing the spec; ask the user to resolve it |
+| Sections index and section files are out of sync | Manual file deletion or rename | Re-parse SECTION_MANIFEST and treat manifest as truth; regenerate only missing files |
+| ralph-loop fails to find SECTION_MANIFEST | `<!-- SECTION_MANIFEST` block missing or malformed | Regenerate `sections/index.md` with the correct block format starting at line 1 |
+
+For multi-day implementations spanning sessions, use session-handoff after each section phase to ensure the resuming agent can reconstruct intent without re-reading all planning files.
+
+---
 
 ## CRITICAL: First Actions
 

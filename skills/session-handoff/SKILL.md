@@ -1,189 +1,140 @@
 ---
 name: session-handoff
-description: "Creates comprehensive handoff documents for seamless AI agent session transfers. Triggered when: (1) user requests handoff/memory/context save, (2) context window approaches capacity, (3) major task milestone completed, (4) work session ending, (5) user says 'save state', 'create handoff', 'I need to pause', 'context is getting full', (6) resuming work with 'load handoff', 'resume from', 'continue where we left off'. Proactively suggests handoffs after substantial work (multiple file edits, complex debugging, architecture decisions). Solves long-running agent context exhaustion by enabling fresh agents to continue with zero ambiguity."
+description: "Creates and resumes comprehensive handoff documents for seamless AI agent session transfers. Use when: user says 'create handoff', 'save state', 'context is getting full', 'I need to pause', 'resume from handoff', 'continue where we left off', 'load context'; OR proactively after 5+ file edits, complex debugging, or architecture decisions. Solves context-exhaustion continuity failures in long-running agent work."
 ---
 
-# Handoff
+## Mindset
 
-Creates comprehensive handoff documents that enable fresh AI agents to seamlessly continue work with zero ambiguity. Solves the long-running agent context exhaustion problem.
+Handoffs fail not because they're incomplete — they fail because the *resuming* agent cannot reconstruct **intent and momentum**, only facts. A list of changed files is not a handoff. The document must answer: "What was I *trying to do* and why does it matter right now?"
 
-## Mode Selection
+Three practitioner truths:
+- The most important section is "Decisions Made and Why" — not "Next Steps". Resuming agents reconstruct next steps from decisions; they cannot reconstruct decisions from next steps.
+- Staleness is asymmetric: a handoff that's 2 hours old in an active repo is more dangerous than one that's 2 weeks old in a quiet one. Always check git delta, not wall clock.
+- The agent writing the handoff is context-rich and will underspecify because things feel obvious. Write for an agent that knows nothing except what you write.
 
-Determine which mode applies:
+## Navigation
 
-**Creating a handoff?** User wants to save current state, pause work, or context is getting full.
-- Follow: CREATE Workflow below
+**Use this skill when**:
+- User says: "create handoff", "save state", "context getting full", "I need to pause", "resume from", "continue where we left off"
+- Context window is visibly large (10+ tool calls, 5+ file edits, complex debug chains)
+- A major decision or architecture choice was just made
+- Resuming work from a previous session or different machine
 
-**Resuming from a handoff?** User wants to continue previous work, load context, or mentions an existing handoff.
-- Follow: RESUME Workflow below
+**Do NOT use this skill when**:
+- The task will complete in the current session — handoffs for trivial tasks add noise
+- No actual work has been done yet (handoff would be empty, misleading)
+- User asked to *save to memory* (MEMORY.md) rather than handoff — these are different tools
 
-**Proactive suggestion?** After substantial work (5+ file edits, complex debugging, major decisions), suggest:
-> "We've made significant progress. Consider creating a handoff document to preserve this context for future sessions. Say 'create handoff' when ready."
+**Ambiguous case — CREATE vs RESUME**:
+- If user says "create handoff" → CREATE workflow
+- If user says "resume" / "load" / "continue" → RESUME workflow
+- If user provides a file path → RESUME workflow, load that file
+
+## Philosophy
+
+A handoff is not documentation — it is a **cognitive transplant**. Every word should close an ambiguity gap, not describe what is already visible in the codebase.
+
+## NEVER
+
+- NEVER write "continue implementing X" as a next step without specifying the exact file, function, and the decision boundary where you stopped — because a resuming agent will start from the beginning of X rather than the midpoint.
+- NEVER include secrets, tokens, API keys, or passwords in handoff documents — they are stored in `.claude/handoffs/` which may be committed; validate with `validate_handoff.py` before finalizing.
+- NEVER skip the "Decisions Made" section because "it's obvious from the code" — the rationale for a decision is never recoverable from the code itself, only its outcome is.
+- NEVER resume from a handoff without running `check_staleness.py` first — a STALE handoff with an incorrect assumed branch is worse than no handoff (the resuming agent will confidently pursue a superseded plan).
+- NEVER create a handoff chain longer than 3 links without pruning — resuming agents reading 4+ chained handoffs will synthesize a corrupted composite context that contradicts itself.
+- NEVER omit the "What Is Blocked / Unresolved" section — unexplained blocks are the #1 cause of resuming agents re-attempting the same failed approach.
+
+## When Things Go Wrong
+
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Resuming agent heads in wrong direction | Next steps were listed without the decision context behind them | Read "Decisions Made" section; reconstruct intent before acting |
+| Validation score below 70 | `[TODO: ...]` stubs left unfilled, or key sections empty | Fill all TODO markers; "Current State" and "Decisions Made" are mandatory |
+| `check_staleness.py` reports VERY_STALE | Many commits since handoff; branch may have diverged | Do NOT resume — create fresh handoff from current state instead |
+| Chained handoffs contradict each other | Older handoff assumed X; newer handoff changed course without noting it | Read newest handoff only; treat it as authoritative; mark prior handoffs superseded |
+| Secrets detected by validator | Credentials were pasted inline rather than referenced by path | Remove secrets, replace with vault/env reference, re-validate |
+
+---
 
 ## CREATE Workflow
 
-### Step 1: Generate Scaffold
-
-Run the smart scaffold script to create a pre-filled handoff document:
+### Step 1: Generate scaffold
 
 ```bash
 python scripts/create_handoff.py [task-slug]
-```
-
-Example: `python scripts/create_handoff.py implementing-user-auth`
-
-**For continuation handoffs** (linking to previous work):
-```bash
+# Chaining from prior handoff:
 python scripts/create_handoff.py "auth-part-2" --continues-from 2024-01-15-auth.md
 ```
 
-The script will:
-- Create `.claude/handoffs/` directory if needed
-- Generate timestamped filename
-- Pre-fill: timestamp, project path, git branch, recent commits, modified files
-- Add handoff chain links if continuing from previous
-- Output file path for editing
+Script auto-fills: timestamp, project path, git branch, recent commits, modified files.
 
-### Step 2: Complete the Handoff Document
+### Step 2: Fill mandatory sections
 
-Open the generated file and fill in all `[TODO: ...]` sections. Prioritize these sections:
+Open the generated file. These sections are **mandatory** — a handoff without them is invalid:
 
-1. **Current State Summary** - What's happening right now
-2. **Important Context** - Critical info the next agent MUST know
-3. **Immediate Next Steps** - Clear, actionable first steps
-4. **Decisions Made** - Choices with rationale (not just outcomes)
+1. **Current State Summary** — one paragraph: what is working, what is not, where execution stopped
+2. **Decisions Made and Why** — each decision with its rationale; not just the outcome
+3. **What Is Blocked / Unresolved** — anything stalled and the last approach tried
+4. **Immediate Next Steps** — file + function + exact stopping point for each action item
 
-Use the template structure in [references/handoff-template.md](references/handoff-template.md) for guidance.
+Template structure: [references/handoff-template.md](references/handoff-template.md)
 
-### Step 3: Validate the Handoff
-
-Run the validation script to check completeness and security:
+### Step 3: Validate
 
 ```bash
 python scripts/validate_handoff.py <handoff-file>
 ```
 
-The validator checks:
-- [ ] No `[TODO: ...]` placeholders remaining
-- [ ] Required sections present and populated
-- [ ] No potential secrets detected (API keys, passwords, tokens)
-- [ ] Referenced files exist
-- [ ] Quality score (0-100)
+Do not finalize if: any `[TODO: ...]` remains, secrets detected, score < 70.
 
-**Do not finalize a handoff with secrets detected or score below 70.**
+### Step 4: Confirm to user
 
-### Step 4: Confirm Handoff
+Report: file location, validation score, first next-step action item.
 
-Report to user:
-- Handoff file location
-- Validation score and any warnings
-- Summary of captured context
-- First action item for next session
+---
 
 ## RESUME Workflow
 
-### Step 1: Find Available Handoffs
-
-List handoffs in the current project:
+### Step 1: Find and assess handoffs
 
 ```bash
 python scripts/list_handoffs.py
-```
-
-This shows all handoffs with dates, titles, and completion status.
-
-### Step 2: Check Staleness
-
-Before loading, check how current the handoff is:
-
-```bash
 python scripts/check_staleness.py <handoff-file>
 ```
 
-Staleness levels:
-- **FRESH**: Safe to resume - minimal changes since handoff
-- **SLIGHTLY_STALE**: Review changes, then resume
-- **STALE**: Verify context carefully before resuming
-- **VERY_STALE**: Consider creating a fresh handoff
+Staleness levels: **FRESH** → resume safely | **SLIGHTLY_STALE** → review changes first | **STALE** → verify carefully | **VERY_STALE** → create fresh handoff instead.
 
-The script checks:
-- Time since handoff was created
-- Git commits since handoff
-- Files changed since handoff
-- Branch divergence
-- Missing referenced files
+### Step 2: Load and verify
 
-### Step 3: Load the Handoff
+Read the handoff completely. If chained, read the most recent only — use predecessor links only to resolve specific gaps.
 
-Read the relevant handoff document completely before taking any action.
+Full resume checklist: [references/resume-checklist.md](references/resume-checklist.md)
 
-If handoff is part of a chain (has "Continues from" link), also read the linked previous handoff for full context.
+Priority checks:
+1. Git branch matches expected branch from handoff
+2. Blockers listed — have they been resolved externally?
+3. Referenced files still exist and match expected state
 
-### Step 4: Verify Context
+### Step 3: Begin from intent, not steps
 
-Follow the checklist in [references/resume-checklist.md](references/resume-checklist.md):
+Start from "Decisions Made" to reconstruct *why* the work matters, then execute "Immediate Next Steps" item #1.
 
-1. Verify project directory and git branch match
-2. Check if blockers have been resolved
-3. Validate assumptions still hold
-4. Review modified files for conflicts
-5. Check environment state
+### Step 4: Maintain or chain
 
-### Step 5: Begin Work
+- Mark completed items in "Pending Work" as you go
+- After substantial progress: create new handoff with `--continues-from` to chain; keep chain ≤ 3 links deep
 
-Start with "Immediate Next Steps" item #1 from the handoff document.
+---
 
-Reference these sections as you work:
-- "Critical Files" for important locations
-- "Key Patterns Discovered" for conventions to follow
-- "Potential Gotchas" to avoid known issues
+## Storage
 
-### Step 6: Update or Chain Handoffs
+Location: `.claude/handoffs/`
+Naming: `YYYY-MM-DD-HHMMSS-[slug].md`
 
-As you work:
-- Mark completed items in "Pending Work"
-- Add new discoveries to relevant sections
-- For long sessions: create a new handoff with `--continues-from` to chain them
-
-## Handoff Chaining
-
-For long-running projects, chain handoffs together to maintain context lineage:
-
-```
-handoff-1.md (initial work)
-    ↓
-handoff-2.md --continues-from handoff-1.md
-    ↓
-handoff-3.md --continues-from handoff-2.md
-```
-
-Each handoff in the chain:
-- Links to its predecessor
-- Can mark older handoffs as superseded
-- Provides context breadcrumbs for new agents
-
-When resuming from a chain, read the most recent handoff first, then reference predecessors as needed.
-
-## Storage Location
-
-Handoffs are stored in: `.claude/handoffs/`
-
-Naming convention: `YYYY-MM-DD-HHMMSS-[slug].md`
-
-Example: `2024-01-15-143022-implementing-auth.md`
-
-## Resources
-
-### scripts/
+## Scripts Reference
 
 | Script | Purpose |
 |--------|---------|
-| `create_handoff.py [slug] [--continues-from <file>]` | Generate new handoff with smart scaffolding |
-| `list_handoffs.py [path]` | List available handoffs in a project |
-| `validate_handoff.py <file>` | Check completeness, quality, and security |
-| `check_staleness.py <file>` | Assess if handoff context is still current |
-
-### references/
-
-- [handoff-template.md](references/handoff-template.md) - Complete template structure with guidance
-- [resume-checklist.md](references/resume-checklist.md) - Verification checklist for resuming agents
+| `create_handoff.py [slug] [--continues-from <file>]` | Scaffold new handoff |
+| `list_handoffs.py [path]` | List available handoffs |
+| `validate_handoff.py <file>` | Check completeness, quality, secrets |
+| `check_staleness.py <file>` | Assess if context is still current |

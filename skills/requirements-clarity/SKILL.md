@@ -1,324 +1,107 @@
 ---
 name: requirements-clarity
-description: Clarify ambiguous requirements through focused dialogue before implementation. Use when requirements are unclear, features are complex (>2 days), or involve cross-team coordination. Ask two core questions - Why? (YAGNI check) and Simpler? (KISS check) - to ensure clarity before coding.
+description: Transform vague requirements into development-ready PRDs through focused dialogue. Trigger phrases: "clarify requirements", "need a PRD", "spec out this feature", "what do I need before coding", "requirement is unclear". Use when features are ambiguous, complex (>2 days), or cross-team. Do NOT use for bug fixes with clear repro steps.
 ---
 
-# Requirements Clarity Skill
+## Mindset
 
-## Description
+- **Ambiguity is expensive late, cheap early.** A 20-minute clarification session prevents a 3-day rewrite. The user asking for "a login feature" has a mental model — your job is to surface it, not fill gaps with assumptions.
+- **YAGNI before elaborating.** Before exploring implementation depth, ask "Is this confirmed needed now, or anticipated future need?" Features built for imagined futures become maintenance debt.
+- **KISS before complexity.** After the user describes what they want, ask "Is there a simpler version that gets 80% of the value?" Complex solutions chosen by default — not by necessity — are a practitioner anti-pattern.
+- **Questions reveal assumptions, not ignorance.** Each question you ask exposes a hidden assumption the user was carrying. Surface it, confirm it, and document it — that's the whole job.
+- **The PRD is a contract, not a template.** A PRD filled with placeholders is worse than no PRD — it creates false confidence. Every section must contain substance before you write it.
 
-Automatically transforms vague requirements into actionable PRDs through systematic clarification with a 100-point scoring system.
+## Navigation
 
+**Use this skill when**:
+- Requirements are vague ("add authentication", "build a dashboard", "implement payments")
+- No acceptance criteria, success metrics, or edge cases mentioned
+- Feature is estimated > 2 days or touches multiple teams
+- User explicitly asks to "clarify", "spec out", or "write a PRD"
 
-## Instructions
+**Do NOT use this skill when**:
+- Specific file paths, line numbers, or code snippets are provided
+- Bug fix with clear reproduction steps
+- Refactoring within existing clearly-scoped function/class
+- User asks for implementation, not specification
 
-When invoked, detect vague requirements:
+**Decision tree for ambiguous invocations**:
+```
+Has the user provided concrete acceptance criteria?
+  YES → Skip to gap analysis; you may reach 90+ in one pass
+  NO  → Full clarification flow (Steps 1-4)
 
-1. **Vague Feature Requests**
-   - User says: "add login feature", "implement payment", "create dashboard"
-   - Missing: How, with what technology, what constraints?
+Is the request a bug report?
+  YES → Exit this skill; suggest code-review or direct debugging
+  NO  → Continue
+```
 
-2. **Missing Technical Context**
-   - No technology stack mentioned
-   - No integration points identified
-   - No performance/security constraints
+## Philosophy
 
-3. **Incomplete Specifications**
-   - No acceptance criteria
-   - No success metrics
-   - No edge cases considered
-   - No error handling mentioned
+Clarity is not achieved by asking more questions — it is achieved by asking the *right* questions in the right order. Ask for the business problem before the technical solution, the user's definition of success before the implementation details, and the explicit exclusions before the edge cases.
 
-4. **Ambiguous Scope**
-   - Unclear boundaries ("user management" - what exactly?)
-   - No distinction between MVP and future enhancements
-   - Missing "what's NOT included"
+## NEVER
 
-**Do NOT activate when**:
-- Specific file paths mentioned (e.g., "auth.go:45")
-- Code snippets included
-- Existing functions/classes referenced
-- Bug fixes with clear reproduction steps
+- **NEVER generate the PRD before clarity score ≥ 90** — because a low-score PRD looks complete but omits exactly the constraints that cause implementation failures (security requirements, performance bounds, error states). False completeness is more dangerous than an acknowledged gap.
+- **NEVER ask all questions at once** — because users answer fewer questions when overwhelmed, and the answers become shallower. Two focused questions get more signal than twelve scattered ones.
+- **NEVER assume a technical choice the user hasn't confirmed** — because framework choices, database decisions, and API contracts constrain future work. An unconfirmed assumption embedded in a PRD becomes a hidden dependency that breaks integration.
+- **NEVER skip the YAGNI gate** — because "we might need this later" is the most common driver of scope bloat in PRDs, and scope bloat in a PRD becomes scope creep in implementation. Surface the tension before it enters the document.
+- **NEVER write vague acceptance criteria** — "the feature should work correctly" is not a criterion. Every acceptance criterion must be testable: a specific behavior, a measurable threshold, or a verifiable state. Untestable criteria guarantee disputed completions.
+- **NEVER close a clarification round without updating the score** — because the score is the only shared signal that tells the user how close they are. Skipping score updates makes the process feel arbitrary and erodes trust in the output.
+- **NEVER ask about solutions before understanding the problem** — asking "what tech stack?" before "what problem does this solve?" anchors the conversation in implementation details and obscures whether the feature is necessary at all.
 
-## Core Principles
+## When Things Go Wrong
 
-1. **Systematic Questioning**
-   - Ask focused, specific questions
-   - One category at a time (2-3 questions per round)
-   - Build on previous answers
-   - Avoid overwhelming users
-
-2. **Quality-Driven Iteration**
-   - Continuously assess clarity score (0-100)
-   - Identify gaps systematically
-   - Iterate until ≥ 90 points
-   - Document all clarification rounds
-
-3. **Actionable Output**
-   - Generate concrete specifications
-   - Include measurable acceptance criteria
-   - Provide executable phases
-   - Enable direct implementation
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| User gives one-word answers to every question | Questions are too abstract or feel like a test | Switch to example-anchored questions: "Would this be more like X or Y?" |
+| Score plateaus below 90 after 4+ rounds | Hitting a genuine unknown (the user doesn't know yet) | Document the gap explicitly in the PRD as a decision deferred to implementation; don't block on it |
+| User wants to skip clarification and just start | They've clarified mentally but not in writing | Run a rapid single-pass: surface only the non-negotiable gaps (security, data model, external integrations) and proceed |
+| PRD scope grows with every round | No explicit exclusion list established early | Stop and co-author an "Out of Scope" section before continuing inward questions |
+| User approves PRD with obvious gaps | Rubber-stamp behavior / cognitive overload | Call out the three riskiest open items explicitly; get explicit confirmation on each before closing |
 
 ## Clarification Process
 
-### Step 1: Initial Requirement Analysis
+### Step 1: Initial Analysis
 
-**Input**: User's requirement description
+Parse the requirement, assign a clarity score (0-100), identify what's clear and what's missing.
 
-**Tasks**:
-1. Parse and understand core requirement
-2. Generate feature name (kebab-case format)
-3. Determine document version (default `1.0` unless user specifies otherwise)
-4. Ensure `./docs/prds/` exists for PRD output
-5. Perform initial clarity assessment (0-100)
+Score dimensions and weights → see `references/clarity-scoring.md`
 
-**Assessment Rubric**:
+Initial response format:
 ```
-Functional Clarity: /30 points
-- Clear inputs/outputs: 10 pts
-- User interaction defined: 10 pts
-- Success criteria stated: 10 pts
+Current Clarity Score: X/100
 
-Technical Specificity: /25 points
-- Technology stack mentioned: 8 pts
-- Integration points identified: 8 pts
-- Constraints specified: 9 pts
+Clear: [what you understand]
+Gaps: [what's missing, grouped by dimension]
 
-Implementation Completeness: /25 points
-- Edge cases considered: 8 pts
-- Error handling mentioned: 9 pts
-- Data validation specified: 8 pts
-
-Business Context: /20 points
-- Problem statement clear: 7 pts
-- Target users identified: 7 pts
-- Success metrics defined: 6 pts
+[First 2-3 questions, highest-impact first]
 ```
 
-**Initial Response Format**:
-```markdown
-I understand your requirement. Let me help you refine this specification.
+### Step 2: YAGNI + KISS Gates
 
-**Current Clarity Score**: X/100
-
-**Clear Aspects**:
-- [List what's clear]
-
-**Needs Clarification**:
-- [List gaps]
-
-Let me systematically clarify these points...
-```
-
-### Step 2: Gap Analysis
-
-Identify missing information across four dimensions:
-
-**1. Functional Scope**
-- What is the core functionality?
-- What are the boundaries?
-- What is out of scope?
-- What are edge cases?
-
-**2. User Interaction**
-- How do users interact?
-- What are the inputs?
-- What are the outputs?
-- What are success/failure scenarios?
-
-**3. Technical Constraints**
-- Performance requirements?
-- Compatibility requirements?
-- Security considerations?
-- Scalability needs?
-
-**4. Business Value**
-- What problem does this solve?
-- Who are the target users?
-- What are success metrics?
-- What is the priority?
+Before proceeding to technical depth, explicitly run:
+1. **YAGNI**: "Is this feature confirmed needed now?" Surface if it's speculative.
+2. **KISS**: "Is there a simpler path that delivers 80% of the value?" Document both options if found.
 
 ### Step 3: Interactive Clarification
 
-**Question Strategy**:
-1. Start with highest-impact gaps
-2. Ask 2-3 questions per round
-3. Build context progressively
-4. Use user's language
-5. Provide examples when helpful
-
-**Question Format**:
-```markdown
-I need to clarify the following points to complete the requirements document:
-
-1. **[Category]**: [Specific question]?
-   - For example: [Example if helpful]
-
-2. **[Category]**: [Specific question]?
-
-3. **[Category]**: [Specific question]?
-
-Please provide your answers, and I'll continue refining the PRD.
-```
-
-**After Each User Response**:
-1. Update clarity score
-2. Capture new information in the working PRD outline
-3. Identify remaining gaps
-4. If score < 90: Continue with next round of questions
-5. If score ≥ 90: Proceed to PRD generation
-
-**Score Update Format**:
-```markdown
-Thank you for the additional information!
-
-**Clarity Score Update**: X/100 → Y/100
-
-**New Clarified Content**:
-- [Summarize new information]
-
-**Remaining Points to Clarify**:
-- [List remaining gaps if score < 90]
-
-[If score < 90: Continue with next round of questions]
-[If score ≥ 90: "Perfect! I will now generate the complete PRD document..."]
-```
+- 2-3 questions per round, highest-impact gaps first
+- Update score after each round
+- If score < 90: continue; if ≥ 90: generate PRD
+- Reference `references/clarity-scoring.md` for round-by-round question strategy
 
 ### Step 4: PRD Generation
 
-Once clarity score ≥ 90, generate comprehensive PRD.
+Once score ≥ 90, generate the PRD using the template in `references/prd-template.md`.
 
-**Output File**:
+Output path: `./docs/prds/{feature-name}-v{version}-prd.md`
 
-1. **Final PRD**: `./docs/prds/{feature_name}-v{version}-prd.md`
+Every section must contain substance. Placeholders are not acceptable in a finalized PRD.
 
-Use the `Write` tool to create or update this file. Derive `{version}` from the document version recorded in the PRD (default `1.0`).
+Once clarity ≥ 90 and the PRD is generated, the natural next step is gepetto to create a sectionized implementation plan from the PRD.
 
-## PRD Document Structure
+## References
 
-```markdown
-# {Feature Name} - Product Requirements Document (PRD)
-
-## Requirements Description
-
-### Background
-- **Business Problem**: [Describe the business problem to solve]
-- **Target Users**: [Target user groups]
-- **Value Proposition**: [Value this feature brings]
-
-### Feature Overview
-- **Core Features**: [List of main features]
-- **Feature Boundaries**: [What is and isn't included]
-- **User Scenarios**: [Typical usage scenarios]
-
-### Detailed Requirements
-- **Input/Output**: [Specific input/output specifications]
-- **User Interaction**: [User operation flow]
-- **Data Requirements**: [Data structures and validation rules]
-- **Edge Cases**: [Edge case handling]
-
-## Design Decisions
-
-### Technical Approach
-- **Architecture Choice**: [Technical architecture decisions and rationale]
-- **Key Components**: [List of main technical components]
-- **Data Storage**: [Data models and storage solutions]
-- **Interface Design**: [API/interface specifications]
-
-### Constraints
-- **Performance Requirements**: [Response time, throughput, etc.]
-- **Compatibility**: [System compatibility requirements]
-- **Security**: [Security considerations]
-- **Scalability**: [Future expansion considerations]
-
-### Risk Assessment
-- **Technical Risks**: [Potential technical risks and mitigation plans]
-- **Dependency Risks**: [External dependencies and alternatives]
-- **Schedule Risks**: [Timeline risks and response strategies]
-
-## Acceptance Criteria
-
-### Functional Acceptance
-- [ ] Feature 1: [Specific acceptance conditions]
-- [ ] Feature 2: [Specific acceptance conditions]
-- [ ] Feature 3: [Specific acceptance conditions]
-
-### Quality Standards
-- [ ] Code Quality: [Code standards and review requirements]
-- [ ] Test Coverage: [Testing requirements and coverage]
-- [ ] Performance Metrics: [Performance test pass criteria]
-- [ ] Security Review: [Security review requirements]
-
-### User Acceptance
-- [ ] User Experience: [UX acceptance criteria]
-- [ ] Documentation: [Documentation delivery requirements]
-- [ ] Training Materials: [If needed, training material requirements]
-
-## Execution Phases
-
-### Phase 1: Preparation
-**Goal**: Environment preparation and technical validation
-- [ ] Task 1: [Specific task description]
-- [ ] Task 2: [Specific task description]
-- **Deliverables**: [Phase deliverables]
-- **Time**: [Estimated time]
-
-### Phase 2: Core Development
-**Goal**: Implement core functionality
-- [ ] Task 1: [Specific task description]
-- [ ] Task 2: [Specific task description]
-- **Deliverables**: [Phase deliverables]
-- **Time**: [Estimated time]
-
-### Phase 3: Integration & Testing
-**Goal**: Integration and quality assurance
-- [ ] Task 1: [Specific task description]
-- [ ] Task 2: [Specific task description]
-- **Deliverables**: [Phase deliverables]
-- **Time**: [Estimated time]
-
-### Phase 4: Deployment
-**Goal**: Release and monitoring
-- [ ] Task 1: [Specific task description]
-- [ ] Task 2: [Specific task description]
-- **Deliverables**: [Phase deliverables]
-- **Time**: [Estimated time]
-
----
-
-**Document Version**: 1.0
-**Created**: {timestamp}
-**Clarification Rounds**: {clarification_rounds}
-**Quality Score**: {quality_score}/100
-```
-
-## Behavioral Guidelines
-
-### DO
-- Ask specific, targeted questions
-- Build on previous answers
-- Provide examples to guide users
-- Maintain conversational tone
-- Summarize clarification rounds within the PRD
-- Use clear, professional English
-- Generate concrete specifications
-- Stay in clarification mode until score ≥ 90
-
-### DON'T
-- Ask all questions at once
-- Make assumptions without confirmation
-- Generate PRD before 90+ score
-- Skip any required sections
-- Use vague or abstract language
-- Proceed without user responses
-- Exit skill mode prematurely
-
-## Success Criteria
-
-- Clarity score ≥ 90/100
-- All PRD sections complete with substance
-- Acceptance criteria checklistable (using `- [ ]` format)
-- Execution phases actionable with concrete tasks
-- User approves final PRD
-- Ready for development handoff
+- `references/clarity-scoring.md` — scoring rubric, YAGNI/KISS gates, round-by-round question strategy
+- `references/prd-template.md` — complete PRD structure with all required sections

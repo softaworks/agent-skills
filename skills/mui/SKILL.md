@@ -1,504 +1,111 @@
 ---
 name: mui
-description: Material-UI v7 component library patterns including sx prop styling, theme integration, responsive design, and MUI-specific hooks. Use when working with MUI components, styling with sx prop, theme customization, or MUI utilities.
+description: Material-UI v7 component library — sx prop styling, theme tokens, slots/slotProps pattern, Grid v2 size prop, Tailwind CSS layer integration, styled() vs sx vs GlobalStyles decisions. Use when working with MUI components, theming, responsive breakpoints, or migrating from MUI v5/v6.
 ---
 
 # MUI v7 Patterns
 
-## Purpose
+## Mindset
 
-Material-UI v7 (released March 2025) patterns for component usage, styling with sx prop, theme integration, and responsive design.
+- **sx is a performance cost, not free CSS**: every sx object is processed by the emotion cache on render. Static objects hoisted outside the component avoid re-creation. If a component re-renders >10×/sec with a complex sx, reach for `styled()` instead.
+- **Theme tokens are contracts, not strings**: `'primary.main'` is resolved at render time against the active theme. Hardcoded hex breaks dark mode and white-labeling silently — the build won't catch it.
+- **slots/slotProps is the v7 customization surface**: `componentsProps` and `components` overrides from v5/v6 still exist as aliases but are deprecated. New MUI components only accept `slots`/`slotProps`. Mixing both on the same component produces unexpected behavior.
+- **Grid v2 is not backward-compatible**: the `item` prop is gone, `xs`/`sm`/`md` top-level props are gone. Only `size={{ xs: 12, md: 6 }}` works. A silent fallback renders all columns full-width if you use old props.
+- **CSS layers (`enableCssLayer`) changes specificity globally**: enabling it means all MUI styles sit inside `@layer mui`, which loses to any unlayered CSS. Tailwind v4 uses layers by default — this is desirable for coexistence, but enabling it mid-project will break existing style overrides.
 
-**Note**: MUI v7 breaking changes from v6:
-- Deep imports no longer work - use package exports field
-- `onBackdropClick` removed from Modal - use `onClose` instead
-- All components now use standardized `slots` and `slotProps` pattern
-- CSS layers support via `enableCssLayer` config (works with Tailwind v4)
+## Navigation
 
-## When to Use This Skill
+**Use this skill when**: writing or reviewing MUI component code, choosing between sx/styled()/GlobalStyles, customizing MUI theme, using Grid/Stack/Box layout, debugging specificity issues with MUI + Tailwind, migrating v5→v7 APIs.
 
-- Styling components with MUI sx prop
-- Using MUI components (Box, Grid, Paper, Typography, etc.)
-- Theme customization and usage
-- Responsive design with MUI breakpoints
-- MUI-specific utilities and hooks
+**Do NOT use this skill when**: the project uses a different component library (Chakra, Ant Design, Radix); pure CSS/Tailwind-only styling with no MUI components present; creating charts (use recharts/Victory directly).
 
----
-
-## Quick Start
-
-### Basic MUI Component
-
-```typescript
-import { Box, Typography, Button, Paper } from '@mui/material';
-import type { SxProps, Theme } from '@mui/material';
-
-const styles: Record<string, SxProps<Theme>> = {
-  container: {
-    p: 2,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-  },
-  header: {
-    mb: 3,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-  },
-};
-
-function MyComponent() {
-  return (
-    <Paper sx={styles.container}>
-      <Typography sx={styles.header}>
-        Title
-      </Typography>
-      <Button variant="contained">
-        Action
-      </Button>
-    </Paper>
-  );
-}
+**Styling approach decision tree**:
+```
+Is the style applied globally (body, scrollbar, :root)?
+  YES → GlobalStyles (not sx, not styled())
+  NO → Is the component a native HTML element with no MUI props?
+         YES → styled('div')(...) for static, sx for one-off
+         NO → Does the style change every render (based on JS state)?
+                YES → sx callback: sx={(theme) => ({ color: active ? theme.palette.primary.main : 'inherit' })}
+                NO → Is it applied in >2 places?
+                       YES → styled(Component)(...) or extract to *.styles.ts as SxProps const
+                       NO → inline sx object hoisted outside component
 ```
 
----
+## Philosophy
 
-## Styling Patterns
+MUI's constraint-based API (spacing scale, palette tokens, breakpoint objects) exists to make design system changes propagate automatically. Every time you escape the constraint system (hardcoded px, hardcoded hex, inline `style={}`) you create a future migration debt. Work inside the system; only escape it deliberately.
 
-### Inline Styles (< 100 lines)
+## NEVER
 
-For components with simple styling, define styles at the top:
+- **NEVER use `style={}` on MUI components for anything other than CSS custom properties** — it bypasses the theme, breaks dark mode support, and is not overridable via `sx` (inline style wins specificity). The one valid use: setting `--css-var` values.
+- **NEVER write `theme.palette.primary.main` inside `sx` string values** — use the shorthand `'primary.main'` token. Calling `useTheme()` just to pass values into sx is redundant; the sx callback `(theme) => ({...})` already receives the theme.
+- **NEVER use `componentsProps`/`components` on v7 MUI components** — these are deprecated aliases that will be removed. Use `slots` and `slotProps`. Mixing them on one component causes the deprecated props to be silently ignored in some code paths.
+- **NEVER put a new `{}` literal directly inside `sx` on a component that renders in a list or high-frequency loop** — `sx={{ p: 2 }}` creates a new object reference every render, defeating emotion's cache. Hoist to a `const styles` outside the component or module.
+- **NEVER use Grid `xs`/`sm`/`md` as direct props on Grid items in v7** — they are silently ignored (no warning in production builds). Always use `size={{ xs: 12, md: 6 }}`.
+- **NEVER override MUI component internals with global CSS class selectors** (`.MuiButton-root`) in production code — internal class names are considered unstable and can change across patch releases. Use `slotProps`, `sx`, or `styled()` with the component's `ownerState`.
+- **NEVER call `useTheme()` solely to read a breakpoint value for conditional rendering** — use `useMediaQuery(theme.breakpoints.up('md'))` or the `sx` responsive object syntax instead. `useTheme()` in render paths increases bundle coupling.
 
-```typescript
-import type { SxProps, Theme } from '@mui/material';
+## When Things Go Wrong
 
-const componentStyles: Record<string, SxProps<Theme>> = {
-  container: {
-    p: 2,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  header: {
-    mb: 2,
-    color: 'primary.main',
-  },
-  button: {
-    mt: 'auto',
-    alignSelf: 'flex-end',
-  },
-};
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Grid items all render full-width | Using old `xs`/`sm` props instead of `size={{ xs: 12 }}` | Replace top-level breakpoint props with `size` object |
+| sx styles silently ignored | `componentsProps` and `slotProps` both set; old prop wins in some components | Remove `componentsProps`, use only `slotProps` |
+| MUI styles lose to Tailwind | `enableCssLayer` active; unlayered Tailwind wins vs `@layer mui` | Ensure Tailwind config uses `@layer` or add `@layer utilities` wrapper |
+| Dark mode: color not switching | Hardcoded hex in sx instead of theme token | Replace with `'primary.main'` or `(theme) => theme.palette.primary.main` |
+| onBackdropClick has no effect | Removed in v7 Modal; handler silently dropped | Move logic to `onClose` with reason check: `onClose={(_, reason) => reason !== 'backdropClick' && close()}` |
+| TypeScript: SxProps type error on array sx | Passing `[styles.a, styles.b]` — correct but needs `SxProps<Theme>[]` | Type the array explicitly or spread: `sx={{ ...styles.a, ...styles.b }}` |
 
-function Component() {
-  return (
-    <Box sx={componentStyles.container}>
-      <Typography sx={componentStyles.header}>Header</Typography>
-      <Button sx={componentStyles.button}>Action</Button>
-    </Box>
-  );
-}
-```
-
-### Separate Styles File (>= 100 lines)
-
-For complex components, create separate style file:
+## v7 Migration Quick Reference
 
 ```typescript
-// UserProfile.styles.ts
-import type { SxProps, Theme } from '@mui/material';
-
-export const userProfileStyles: Record<string, SxProps<Theme>> = {
-  container: {
-    p: 3,
-    maxWidth: 800,
-    mx: 'auto',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    mb: 3,
-  },
-  // ... many more styles
-};
-
-// UserProfile.tsx
-import { userProfileStyles as styles } from './UserProfile.styles';
-
-function UserProfile() {
-  return <Box sx={styles.container}>...</Box>;
-}
+// v5/v6 → v7 breaking changes
+onBackdropClick={fn}           // REMOVED → use onClose with reason
+<Grid item xs={6}>             // REMOVED → <Grid size={6}>
+import X from '@mui/material/X' // REMOVED → import { X } from '@mui/material'
+componentsProps={{ root: {} }}  // DEPRECATED → slotProps={{ root: {} }}
 ```
 
----
+## Styling Recipes
 
-## Common Components
-
-### Layout Components
-
-```typescript
-// Box - Generic container
-<Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-  Content
-</Box>
-
-// Paper - Elevated surface
-<Paper elevation={2} sx={{ p: 3 }}>
-  Content
-</Paper>
-
-// Container - Centered content with max-width
-<Container maxWidth="lg">
-  Content
-</Container>
-
-// Stack - Flex container with spacing
-<Stack spacing={2} direction="row">
-  <Item />
-  <Item />
-</Stack>
-```
-
-### Grid System
-
-```typescript
-import { Grid } from '@mui/material';
-
-// 12-column grid
-<Grid container spacing={2}>
-  <Grid item xs={12} md={6}>
-    Left half
-  </Grid>
-  <Grid item xs={12} md={6}>
-    Right half
-  </Grid>
-</Grid>
-
-// Responsive grid
-<Grid container spacing={3}>
-  <Grid item xs={12} sm={6} md={4} lg={3}>
-    Card
-  </Grid>
-  {/* Repeat for more cards */}
-</Grid>
-```
-
-### Typography
-
-```typescript
-<Typography variant="h1">Heading 1</Typography>
-<Typography variant="h2">Heading 2</Typography>
-<Typography variant="body1">Body text</Typography>
-<Typography variant="caption">Small text</Typography>
-
-// With custom styling
-<Typography
-  variant="h4"
-  sx={{
-    color: 'primary.main',
-    fontWeight: 600,
-    mb: 2,
-  }}
->
-  Custom Heading
-</Typography>
-```
-
-### Buttons
-
-```typescript
-// Variants
-<Button variant="contained">Contained</Button>
-<Button variant="outlined">Outlined</Button>
-<Button variant="text">Text</Button>
-
-// Colors
-<Button variant="contained" color="primary">Primary</Button>
-<Button variant="contained" color="secondary">Secondary</Button>
-<Button variant="contained" color="error">Error</Button>
-
-// With icons
-import { Add as AddIcon } from '@mui/icons-material';
-
-<Button startIcon={<AddIcon />}>Add Item</Button>
-```
-
----
-
-## Theme Integration
-
-### Using Theme Values
-
-```typescript
-import { useTheme } from '@mui/material';
-
-function Component() {
-  const theme = useTheme();
-
-  return (
-    <Box
-      sx={{
-        p: 2,
-        bgcolor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
-        borderRadius: theme.shape.borderRadius,
-      }}
-    >
-      Themed box
-    </Box>
-  );
-}
-```
-
-### Theme in sx Prop
-
-```typescript
-<Box
-  sx={{
-    // Access theme in sx
-    color: 'primary.main',          // theme.palette.primary.main
-    bgcolor: 'background.paper',     // theme.palette.background.paper
-    p: 2,                            // theme.spacing(2)
-    borderRadius: 1,                 // theme.shape.borderRadius
-  }}
->
-  Content
-</Box>
-
-// Callback for advanced usage
-<Box
-  sx={(theme) => ({
-    color: theme.palette.primary.main,
-    '&:hover': {
-      color: theme.palette.primary.dark,
-    },
-  })}
->
-  Hover me
-</Box>
-```
-
----
-
-## Responsive Design
-
-### Breakpoints
-
-```typescript
-// Mobile-first responsive values
-<Box
-  sx={{
-    width: {
-      xs: '100%',    // 0-600px
-      sm: '80%',     // 600-900px
-      md: '60%',     // 900-1200px
-      lg: '40%',     // 1200-1536px
-      xl: '30%',     // 1536px+
-    },
-  }}
->
-  Responsive width
-</Box>
-
-// Responsive display
-<Box
-  sx={{
-    display: {
-      xs: 'none',    // Hidden on mobile
-      md: 'block',   // Visible on desktop
-    },
-  }}
->
-  Desktop only
-</Box>
-```
-
-### Responsive Typography
-
-```typescript
-<Typography
-  sx={{
-    fontSize: {
-      xs: '1rem',
-      md: '1.5rem',
-      lg: '2rem',
-    },
-    lineHeight: {
-      xs: 1.5,
-      md: 1.75,
-    },
-  }}
->
-  Responsive text
-</Typography>
-```
-
----
-
-## Forms
-
-```typescript
-import { TextField, Stack, Button } from '@mui/material';
-
-<Box component="form" onSubmit={handleSubmit}>
-  <Stack spacing={2}>
-    <TextField
-      label="Email"
-      type="email"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      fullWidth
-      required
-      error={!!errors.email}
-      helperText={errors.email}
-    />
-    <Button type="submit" variant="contained">Submit</Button>
-  </Stack>
-</Box>
-```
-
----
-
-## Common Patterns
-
-### Card Component
-
-```typescript
-import { Card, CardContent, CardActions, Typography, Button } from '@mui/material';
-
-<Card>
-  <CardContent>
-    <Typography variant="h5" component="div">
-      Title
-    </Typography>
-    <Typography variant="body2" color="text.secondary">
-      Description
-    </Typography>
-  </CardContent>
-  <CardActions>
-    <Button size="small">Learn More</Button>
-  </CardActions>
-</Card>
-```
-
-### Dialog/Modal
-
-```typescript
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-
-<Dialog open={open} onClose={handleClose}>
-  <DialogTitle>Confirm Action</DialogTitle>
-  <DialogContent>
-    Are you sure you want to proceed?
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={handleClose}>Cancel</Button>
-    <Button onClick={handleConfirm} variant="contained">
-      Confirm
-    </Button>
-  </DialogActions>
-</Dialog>
-```
-
-### Loading States
-
-```typescript
-import { CircularProgress, Skeleton } from '@mui/material';
-
-// Spinner
-<Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-  <CircularProgress />
-</Box>
-
-// Skeleton
-<Stack spacing={1}>
-  <Skeleton variant="text" width="60%" />
-  <Skeleton variant="rectangular" height={200} />
-  <Skeleton variant="text" width="40%" />
-</Stack>
-```
-
----
-
-## MUI-Specific Hooks
-
-### useMuiSnackbar
-
-```typescript
-import { useMuiSnackbar } from '@/hooks/useMuiSnackbar';
-
-function Component() {
-  const { showSuccess, showError, showInfo } = useMuiSnackbar();
-
-  const handleSave = async () => {
-    try {
-      await saveData();
-      showSuccess('Saved successfully');
-    } catch (error) {
-      showError('Failed to save');
-    }
-  };
-
-  return <Button onClick={handleSave}>Save</Button>;
-}
-```
-
----
-
-## Icons
-
-```typescript
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { Button, IconButton } from '@mui/material';
-
-<Button startIcon={<AddIcon />}>Add</Button>
-<IconButton onClick={handleDelete}><DeleteIcon /></IconButton>
-```
-
----
-
-## Best Practices
-
-### 1. Type Your sx Props
-
+**Static styles (preferred — hoisted, typed):**
 ```typescript
 import type { SxProps, Theme } from '@mui/material';
-
-// ✅ Good
-const styles: Record<string, SxProps<Theme>> = {
-  container: { p: 2 },
-};
-
-// ❌ Avoid
 const styles = {
-  container: { p: 2 }, // No type safety
+  card: { p: 2, borderRadius: 2, bgcolor: 'background.paper' } satisfies SxProps<Theme>,
 };
 ```
 
-### 2. Use Theme Tokens
-
+**Theme-dependent dynamic styles:**
 ```typescript
-// ✅ Good: Use theme tokens
-<Box sx={{ color: 'primary.main', p: 2 }} />
-
-// ❌ Avoid: Hardcoded values
-<Box sx={{ color: '#1976d2', padding: '16px' }} />
+sx={(theme) => ({
+  border: `1px solid ${theme.palette.divider}`,
+  [theme.breakpoints.up('md')]: { flexDirection: 'row' },
+})}
 ```
 
-### 3. Consistent Spacing
-
+**GlobalStyles (reset/global only):**
 ```typescript
-// ✅ Good: Use spacing scale
-<Box sx={{ p: 2, mb: 3, mt: 1 }} />
-
-// ❌ Avoid: Random pixel values
-<Box sx={{ padding: '17px', marginBottom: '25px' }} />
+import { GlobalStyles } from '@mui/material';
+<GlobalStyles styles={{ '*': { boxSizing: 'border-box' }, body: { margin: 0 } }} />
 ```
 
----
+**styled() — reusable semantic component:**
+```typescript
+const StatusChip = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'isActive',
+})<{ isActive: boolean }>(({ theme, isActive }) => ({
+  backgroundColor: isActive ? theme.palette.success.light : theme.palette.grey[300],
+}));
+```
 
-## Additional Resources
+## Snackbar Pattern
 
-For more detailed patterns, see:
-- [styling-guide.md](resources/styling-guide.md) - Advanced styling patterns
-- [component-library.md](resources/component-library.md) - Component examples
-- [theme-customization.md](resources/theme-customization.md) - Theme setup
+MUI has no built-in `useSnackbar` hook. Use notistack (`enqueueSnackbar`) or a local state pattern. See [resources/styling-guide.md](resources/styling-guide.md) for the full implementation.
+
+## References
+
+- [resources/styling-guide.md](resources/styling-guide.md) — sx vs styled() deep dive, emotion caching, GlobalStyles
+- [resources/component-library.md](resources/component-library.md) — Card, Dialog, Form, Loading patterns with full code
+- [resources/theme-customization.md](resources/theme-customization.md) — createTheme, palette, typography, component overrides

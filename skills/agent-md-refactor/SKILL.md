@@ -1,287 +1,95 @@
 ---
 name: agent-md-refactor
-description: Refactor bloated AGENTS.md, CLAUDE.md, or similar agent instruction files to follow progressive disclosure principles. Splits monolithic files into organized, linked documentation.
+description: Refactor bloated AGENTS.md, CLAUDE.md, COPILOT.md, or similar agent instruction files. Splits monolithic files into organized, linked documentation using progressive disclosure. Use when: "refactor my AGENTS.md", "my CLAUDE.md is too long", "split my agent instructions", "organize my agent config", "progressive disclosure for my instructions", "clean up my CLAUDE.md".
 license: MIT
 ---
 
 # Agent MD Refactor
 
-Refactor bloated agent instruction files (AGENTS.md, CLAUDE.md, COPILOT.md, etc.) to follow **progressive disclosure principles** - keeping essentials at root and organizing the rest into linked, categorized files.
+---
+
+## Mindset
+
+**Platform determines structure.** Progressive disclosure (linked files) only works for Claude Code. Claude.ai Projects, Copilot, Cursor, and Aider all ignore linked files — splitting them actively breaks those setups. Confirm platform before touching anything.
+
+**Read the entire file before splitting.** Contradictions between line 12 and line 340 are invisible if you scan and split incrementally. A contradiction you miss becomes an agent inconsistency you can't debug later.
+
+**Deletion destroys institutional knowledge.** "Write clean code" is safe to delete. "Never use mutable default arguments in our config loader" looks like generic advice but encodes a real incident. Only delete universally-obvious defaults — when in doubt, keep.
+
+**The "every task" test is the only categorization rule that matters.** If an instruction only applies to 30% of tasks, it doesn't belong in the root file. Not "is it important" — is it relevant to 100% of tasks.
+
+**Over-splitting is worse than not splitting.** Eight linked files for a 200-line source forces the agent to open 8 files to find one rule. More context cost, not less. Target 3–6 linked files maximum.
 
 ---
 
-## Triggers
+## Navigation
 
-Use this skill when:
-- "refactor my AGENTS.md" / "refactor my CLAUDE.md"
-- "split my agent instructions"
-- "organize my CLAUDE.md file"
-- "my AGENTS.md is too long"
-- "progressive disclosure for my instructions"
-- "clean up my agent config"
+**Use this skill when:**
+- "refactor my AGENTS.md / CLAUDE.md / COPILOT.md"
+- "my agent instructions are too long"
+- "split my agent instructions into files"
+- "progressive disclosure for my agent config"
+- "clean up / organize my CLAUDE.md"
 
----
+**Do NOT use this skill when:**
+- The file is already under 80 lines — pruning and editing is faster than restructuring
+- The platform is Claude.ai Projects, Copilot, Cursor, or Aider — linked files don't work there; offer prune-only instead
+- The user wants to write new instructions from scratch — this skill refactors, it doesn't author
 
-## Quick Reference
-
-| Phase | Action | Output |
-|-------|--------|--------|
-| 1. Analyze | Find contradictions | List of conflicts to resolve |
-| 2. Extract | Identify essentials | Core instructions for root file |
-| 3. Categorize | Group remaining instructions | Logical categories |
-| 4. Structure | Create file hierarchy | Root + linked files |
-| 5. Prune | Flag for deletion | Redundant/vague instructions |
-
----
-
-## Process
-
-### Phase 1: Find Contradictions
-
-Identify any instructions that conflict with each other.
-
-**Look for:**
-- Contradictory style guidelines (e.g., "use semicolons" vs "no semicolons")
-- Conflicting workflow instructions
-- Incompatible tool preferences
-- Mutually exclusive patterns
-
-**For each contradiction found:**
-```markdown
-## Contradiction Found
-
-**Instruction A:** [quote]
-**Instruction B:** [quote]
-
-**Question:** Which should take precedence, or should both be conditional?
+**Platform decision tree:**
 ```
-
-Ask the user to resolve before proceeding.
-
----
-
-### Phase 2: Identify the Essentials
-
-Extract ONLY what belongs in the root agent file. The root should be minimal - information that applies to **every single task**.
-
-**Essential content (keep in root):**
-| Category | Example |
-|----------|---------|
-| Project description | One sentence: "A React dashboard for analytics" |
-| Package manager | Only if not npm (e.g., "Uses pnpm") |
-| Non-standard commands | Custom build/test/typecheck commands |
-| Critical overrides | Things that MUST override defaults |
-| Universal rules | Applies to 100% of tasks |
-
-**NOT essential (move to linked files):**
-- Language-specific conventions
-- Testing guidelines
-- Code style details
-- Framework patterns
-- Documentation standards
-- Git workflow details
-
----
-
-### Phase 3: Group the Rest
-
-Organize remaining instructions into logical categories.
-
-**Common categories:**
-| Category | Contents |
-|----------|----------|
-| `typescript.md` | TS conventions, type patterns, strict mode rules |
-| `testing.md` | Test frameworks, coverage, mocking patterns |
-| `code-style.md` | Formatting, naming, comments, structure |
-| `git-workflow.md` | Commits, branches, PRs, reviews |
-| `architecture.md` | Patterns, folder structure, dependencies |
-| `api-design.md` | REST/GraphQL conventions, error handling |
-| `security.md` | Auth patterns, input validation, secrets |
-| `performance.md` | Optimization rules, caching, lazy loading |
-
-**Grouping rules:**
-1. Each file should be self-contained for its topic
-2. Aim for 3-8 files (not too granular, not too broad)
-3. Name files clearly: `{topic}.md`
-4. Include only actionable instructions
-
----
-
-### Phase 4: Create the File Structure
-
-**Output structure:**
-```
-project-root/
-├── CLAUDE.md (or AGENTS.md)     # Minimal root with links
-└── .claude/                      # Or docs/agent-instructions/
-    ├── typescript.md
-    ├── testing.md
-    ├── code-style.md
-    ├── git-workflow.md
-    └── architecture.md
-```
-
-**Root file template:**
-```markdown
-# Project Name
-
-One-sentence description of the project.
-
-## Quick Reference
-
-- **Package Manager:** pnpm
-- **Build:** `pnpm build`
-- **Test:** `pnpm test`
-- **Typecheck:** `pnpm typecheck`
-
-## Detailed Instructions
-
-For specific guidelines, see:
-- [TypeScript Conventions](.claude/typescript.md)
-- [Testing Guidelines](.claude/testing.md)
-- [Code Style](.claude/code-style.md)
-- [Git Workflow](.claude/git-workflow.md)
-- [Architecture Patterns](.claude/architecture.md)
-```
-
-**Each linked file template:**
-```markdown
-# {Topic} Guidelines
-
-## Overview
-Brief context for when these guidelines apply.
-
-## Rules
-
-### Rule Category 1
-- Specific, actionable instruction
-- Another specific instruction
-
-### Rule Category 2
-- Specific, actionable instruction
-
-## Examples
-
-### Good
-\`\`\`typescript
-// Example of correct pattern
-\`\`\`
-
-### Avoid
-\`\`\`typescript
-// Example of what not to do
-\`\`\`
+What platform(s) does this file serve?
+├── Claude Code only           → full progressive disclosure (linked files valid)
+├── Claude.ai Projects only    → flat only; prune and reorganize, no splitting
+├── Copilot / Cursor / Aider   → flat only; splitting breaks it
+└── Multiple platforms         → create separate files per platform, or keep flat
 ```
 
 ---
 
-### Phase 5: Flag for Deletion
+## Philosophy
 
-Identify instructions that should be removed entirely.
-
-**Delete if:**
-| Criterion | Example | Why Delete |
-|-----------|---------|------------|
-| Redundant | "Use TypeScript" (in a .ts project) | Agent already knows |
-| Too vague | "Write clean code" | Not actionable |
-| Overly obvious | "Don't introduce bugs" | Wastes context |
-| Default behavior | "Use descriptive variable names" | Standard practice |
-| Outdated | References deprecated APIs | No longer applies |
-
-**Output format:**
-```markdown
-## Flagged for Deletion
-
-| Instruction | Reason |
-|-------------|--------|
-| "Write clean, maintainable code" | Too vague to be actionable |
-| "Use TypeScript" | Redundant - project is already TS |
-| "Don't commit secrets" | Agent already knows this |
-| "Follow best practices" | Meaningless without specifics |
-```
+Agent instruction files are not documentation — they are compiler inputs. Every byte costs inference tokens on every task. The goal is maximum signal density at minimum size: root file carries only what every task needs, linked files carry the rest, and anything a competent agent already knows gets deleted.
 
 ---
 
-## Execution Checklist
+## NEVER
 
-```
-[ ] Phase 1: All contradictions identified and resolved
-[ ] Phase 2: Root file contains ONLY essentials
-[ ] Phase 3: All remaining instructions categorized
-[ ] Phase 4: File structure created with proper links
-[ ] Phase 5: Redundant/vague instructions removed
-[ ] Verify: Each linked file is self-contained
-[ ] Verify: Root file is under 50 lines
-[ ] Verify: All links work correctly
-```
+- **NEVER split files before confirming platform** — linked files are silently ignored on Claude.ai Projects, Copilot, Cursor, and Aider; splitting a multi-platform file breaks all non-Claude-Code users without any error message.
 
----
+- **NEVER delete instructions that contain project-specific nouns** — library names, internal hook names, team-specific patterns, and incident-derived rules all look like "generic best practices" to an outside reader but encode irreplaceable context. Only delete instructions that could appear verbatim in any project.
 
-## Anti-Patterns
+- **NEVER create linked files that link to more linked files** — agents follow links from root, then read the target file. They do not recursively follow links inside linked files. Any instruction buried at depth 2+ is effectively invisible, creating a false sense of organization with zero functional benefit.
 
-| Avoid | Why | Instead |
-|-------|-----|---------|
-| Keeping everything in root | Bloated, hard to maintain | Split into linked files |
-| Too many categories | Fragmentation | Consolidate related topics |
-| Vague instructions | Wastes tokens, no value | Be specific or delete |
-| Duplicating defaults | Agent already knows | Only override when needed |
-| Deep nesting | Hard to navigate | Flat structure with links |
+- **NEVER merge contradicting instructions without user confirmation** — two conflicting rules might both be intentional (e.g., "use semicolons" in source, "no semicolons" in test files). Silently picking one invalidates half the project's convention history.
+
+- **NEVER apply progressive disclosure to a file under 80 lines** — the overhead of maintaining links and multiple files exceeds the context savings. Small files should be pruned, not split.
+
+- **NEVER categorize by topic noun instead of task trigger** — `style-and-conventions.md` is organized around what the content is; `code-review.md` is organized around when it is needed. Agents retrieve context when starting a task — trigger-based grouping matches how they actually read.
 
 ---
 
-## Examples
+## When Things Go Wrong
 
-### Before (Bloated Root)
-```markdown
-# CLAUDE.md
-
-This is a React project.
-
-## Code Style
-- Use 2 spaces
-- Use semicolons
-- Prefer const over let
-- Use arrow functions
-... (200 more lines)
-
-## Testing
-- Use Jest
-- Coverage > 80%
-... (100 more lines)
-
-## TypeScript
-- Enable strict mode
-... (150 more lines)
-```
-
-### After (Progressive Disclosure)
-```markdown
-# CLAUDE.md
-
-React dashboard for real-time analytics visualization.
-
-## Commands
-- `pnpm dev` - Start development server
-- `pnpm test` - Run tests with coverage
-- `pnpm build` - Production build
-
-## Guidelines
-- [Code Style](.claude/code-style.md)
-- [Testing](.claude/testing.md)
-- [TypeScript](.claude/typescript.md)
-```
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Agent stops following linked files | Platform is Claude.ai Projects or Copilot — linked files are not followed | Flatten back to single file; use section headers instead |
+| Linked file exists but agent never reads it | No link in root file pointing to it, or link at depth 2+ | Add explicit link from root; never nest links |
+| Refactored file loses a critical constraint | Domain-specific rule deleted as "obvious" | Restore from git history; add to deletion triage checklist — confirm all project-noun rules with user |
+| Root file creep returns after 2 months | No process to prevent additive drift | Add line-count gate to CI or README: "Root file must stay under 50 lines" |
+| Split created contradictions that didn't exist before | Copy-paste from different source contexts during categorization | Re-read both files; surface conflict to user before finalizing |
 
 ---
 
-## Verification
+## Quick Process
 
-After refactoring, verify:
+Full workflow detail: [references/refactor-workflow.md](references/refactor-workflow.md)
+Anti-patterns catalog + platform compatibility matrix: [references/anti-patterns-catalog.md](references/anti-patterns-catalog.md)
 
-1. **Root file is minimal** - Under 50 lines, only universal info
-2. **Links work** - All referenced files exist
-3. **No contradictions** - Instructions are consistent
-4. **Actionable content** - Every instruction is specific
-5. **Complete coverage** - No instructions were lost (unless flagged for deletion)
-6. **Self-contained files** - Each linked file stands alone
+**Five-phase summary:**
 
----
+1. **Platform check** — confirm linked files are valid for this target
+2. **Full read + contradiction scan** — read complete file; surface all conflicts to user before touching anything
+3. **Essentials extraction** — apply "every task" test; root file target under 50 lines
+4. **Categorize by task trigger** — 3–6 linked files max; group by WHEN needed, not WHAT topic
+5. **Deletion triage** — three buckets: DELETE (universal defaults), KEEP (domain-specific), ESCALATE (ask user)

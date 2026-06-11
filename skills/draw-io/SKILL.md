@@ -1,278 +1,176 @@
 ---
 name: draw-io
-description: draw.io diagram creation, editing, and review. Use for .drawio XML editing, PNG conversion, layout adjustment, and AWS icon usage.
+description: Create, edit, review, and convert draw.io diagrams (.drawio XML). Use for AWS architecture diagrams, flowcharts, layout adjustment, PNG export, icon selection, and Quarto/reveal.js slide integration. Triggers on: "draw a diagram", "create architecture diagram", "edit drawio", "add AWS icon", "convert to PNG", "fix layout", "drawio XML".
 ---
 
 # draw.io Diagram Skill
 
-## 1. Basic Rules
+## Mindset
 
-- Edit only `.drawio` files
-- Do not directly edit `.drawio.png` files
-- Use auto-generated `.drawio.png` by pre-commit hook in slides
+1. **XML-first thinking**: draw.io files are plain XML — read and write them as structured data, not as visual canvas operations. Every position, style, and connection is deterministic from the XML.
+2. **Layer ordering is load order**: Elements render in document order — put arrows before boxes, not after, or arrows will overdraw icons. This is non-obvious because draw.io GUI handles z-order separately.
+3. **Verify with PNG, not XML**: Layout bugs (overflow, label collision, arrow penetration) are invisible in XML. Always run conversion and inspect the raster output before declaring done.
+4. **Icon type is a decision, not a guess**: resourceIcon vs productIcon vs generic shape have different geometry contracts. Choosing wrong produces misaligned or invisible icons. Use the selector table below.
+5. **Margins are asymmetric**: 30px is the minimum inner margin for straight edges, but rounded corners (`rounded=1`) consume extra space — add strokeWidth × 2 to your margin calculations.
 
-## 2. Font Settings
+## Navigation
 
-For diagrams used in Quarto slides,
-specify `defaultFontFamily` in mxGraphModel tag:
+### Use this skill when
+- Creating or editing `.drawio` XML files
+- Selecting the right AWS icon style (resource vs product vs group)
+- Converting diagrams to PNG for slides or documentation
+- Debugging element overflow, arrow overlap, or label collision
+- Setting up consistent fonts for Quarto / reveal.js presentations
+
+### Do NOT use this skill when
+- The target format is Mermaid, PlantUML, or Excalidraw — use the matching skill
+- You need a diagram embedded directly in Markdown without a separate file
+- The goal is purely a sequence diagram — Mermaid sequence syntax is faster
+
+### Icon-Type Decision Tree
+
+| Scenario | Use | Style Fragment |
+|---|---|---|
+| Single AWS service (EC2, Lambda, S3, RDS…) | resourceIcon | `shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.{name}` |
+| AWS service product tile (larger, with label strip) | productIcon | `shape=mxgraph.aws4.productIcon;prIcon=mxgraph.aws4.{name}` |
+| VPC / subnet / availability zone boundary box | Group shape | `shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_{name}` |
+| Non-AWS box (database, user, external system) | Generic shape | `rounded=1;whiteSpace=wrap;html=1` |
+| AWS Cloud outer boundary | AWS Cloud group | `shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt` |
+
+Standard resourceIcon size: 60×60px. productIcon: 80×80px. Group boxes: size to contents.
+
+## Philosophy
+
+draw.io diagrams are source code: they must be deterministic, diff-able, and reproducible. Treat every XML edit with the same discipline as code — no magic numbers, no visual tweaks without understanding the coordinate system, and always verify the rendered output.
+
+## NEVER
+
+- **NEVER edit `.drawio.png` files directly** — they are auto-generated artifacts; edits are silently overwritten on next conversion and the source XML diverges from the rendered image.
+- **NEVER use `mxgraph.aws3.*` icons** — the aws3 set is deprecated and renders placeholder boxes in current draw.io versions; always use `mxgraph.aws4.*`.
+- **NEVER rely on `exitX`/`exitY` connection points on text elements** — text cells have no port geometry; the connector snaps to the bounding box corner unpredictably. Use explicit `mxPoint sourcePoint`/`targetPoint` coordinates instead.
+- **NEVER set `background="#ffffff"` on the mxGraphModel** — white backgrounds break dark-theme slides and PDFs; omit the attribute or set `page="0"` to get transparent output.
+- **NEVER place arrows after icon/box elements in XML** — draw.io renders in document order; arrows declared after shapes render on top of icons, obscuring them. Arrows must appear immediately after the title cell.
+- **NEVER assume 30px margin is enough inside a rounded container** — `rounded=1` with `strokeWidth=3` eats ~9px of visual space on each side; use `frameMargin = 30 + (strokeWidth × 2)` as your actual inner boundary.
+- **NEVER abbreviate AWS service names in labels** — use "Amazon ECS", not "ECS"; "AWS Lambda", not "Lambda". Official names are required for compliance diagrams and searchability.
+
+## Conversion Commands
+
+```sh
+# Convert all .drawio files via pre-commit hook
+mise exec -- pre-commit run --all-files
+
+# Convert specific file
+mise exec -- pre-commit run convert-drawio-to-png --files assets/my-diagram.drawio
+
+# Run conversion script directly
+bash ~/.claude/skills/draw-io/scripts/convert-drawio-to-png.sh assets/diagram.drawio
+```
+
+Internal drawio CLI flags used:
+
+| Option | Effect |
+|---|---|
+| `-x` | Export mode |
+| `-f png` | PNG output format |
+| `-s 2` | 2× scale (high resolution) |
+| `-t` | Transparent background |
+| `-o` | Output path |
+
+## Font Settings
+
+For Quarto / reveal.js slides, set font at both model and element level:
 
 ```xml
 <mxGraphModel defaultFontFamily="Noto Sans JP" ...>
+  ...
+  <mxCell style="text;html=1;fontSize=27;fontFamily=Noto Sans JP;" .../>
 ```
 
-Also explicitly specify `fontFamily` in each text element's style attribute:
+Font size: use 1.5× standard (≈18px minimum; 27px for slide titles). Japanese text: allow 30–40px per character width.
 
+## Layout Rules
+
+### Coordinate System
+- `x`, `y` = top-left corner of element bounding box
+- Element center = `y + height/2`
+- To vertically align two elements: set their center values equal
+
+### Container Margins
+```text
+Effective inner boundary = containerY + 30 + (strokeWidth × 2)
+                          to
+                          containerY + containerHeight - 30 - (strokeWidth × 2)
+```
+
+### Arrow Placement (XML Order)
 ```xml
-style="text;html=1;fontSize=27;fontFamily=Noto Sans JP;"
-```
+<!-- 1. Title -->
+<mxCell id="title" value="Diagram Title" .../>
 
-## 3. Conversion Commands
-
-See conversion script at [scripts/convert-drawio-to-png.sh](scripts/convert-drawio-to-png.sh).
-
-```sh
-# Convert all .drawio files
-mise exec -- pre-commit run --all-files
-
-# Convert specific .drawio file
-mise exec -- pre-commit run convert-drawio-to-png --files assets/my-diagram.drawio
-
-# Run script directly (using skill's script)
-bash ~/.claude/skills/draw-io/scripts/convert-drawio-to-png.sh assets/diagram1.drawio
-```
-
-Internal command used:
-
-```sh
-drawio -x -f png -s 2 -t -o output.drawio.png input.drawio
-```
-
-| Option | Description |
-|--------|-------------|
-| `-x` | Export mode |
-| `-f png` | PNG format output |
-| `-s 2` | 2x scale (high resolution) |
-| `-t` | Transparent background |
-| `-o` | Output file path |
-
-## 4. Layout Adjustment
-
-### 4.1. Coordinate Adjustment Steps
-
-1. Open `.drawio` file in text editor (plain XML format)
-2. Find `mxCell` for element to adjust (search by `value` attribute for text)
-3. Adjust coordinates in `mxGeometry` tag
-   - `x`: Position from left
-   - `y`: Position from top
-   - `width`: Width
-   - `height`: Height
-4. Run conversion and verify
-
-### 4.2. Coordinate Calculation
-
-- Element center coordinate = `y + (height / 2)`
-- To align multiple elements, calculate and match center coordinates
-
-## 5. Design Principles
-
-### 5.1. Basic Principles
-
-- Clarity: Create simple, visually clean diagrams
-- Consistency: Unify colors, fonts, icon sizes, line thickness
-- Accuracy: Do not sacrifice accuracy for simplification
-
-### 5.2. Element Rules
-
-- Label all elements
-- Use arrows to indicate direction
-  (prefer 2 unidirectional arrows over bidirectional)
-- Use latest official icons
-- Add legend to explain custom symbols
-
-### 5.3. Accessibility
-
-- Ensure sufficient color contrast
-- Use patterns in addition to colors
-
-### 5.4. Progressive Disclosure
-
-Separate complex systems into staged diagrams:
-
-| Diagram Type | Purpose |
-|--------------|---------|
-| Context Diagram | System overview from external perspective |
-| System Diagram | Main components and relationships |
-| Component Diagram | Technical details and integration points |
-| Deployment Diagram | Infrastructure configuration |
-| Data Flow Diagram | Data flow and transformation |
-| Sequence Diagram | Time-series interactions |
-
-### 5.5. Metadata
-
-Include title, description, last updated, author, and version in diagrams.
-
-## 6. Best Practices
-
-### 6.1. Background Color
-
-- Remove `background="#ffffff"`
-- Transparent background adapts to various themes
-
-### 6.2. Font Size
-
-- Use 1.5x standard font size (around 18px) for PDF readability
-
-### 6.3. Japanese Text Width
-
-- Allow 30-40px per character
-- Insufficient width causes unintended line breaks
-
-```xml
-<!-- For 10-character text, allow 300-400px -->
-<mxGeometry x="140" y="60" width="400" height="40" />
-```
-
-### 6.4. Arrow Placement
-
-- Always place arrows at back (position in XML right after Title)
-- Position arrows to avoid overlapping with labels
-- Keep arrow start/end at least 20px from label bottom edge
-
-```xml
-<!-- Title -->
-<mxCell id="title" value="..." .../>
-
-<!-- Arrows (back layer) -->
-<mxCell id="arrow1" style="edgeStyle=..." .../>
-
-<!-- Other elements (front layer) -->
-<mxCell id="box1" .../>
-```
-
-### 6.5. Arrow Connection to Text Labels
-
-For text elements, exitX/exitY don't work, so use explicit coordinates:
-
-```xml
-<!-- Good: Explicit coordinates with sourcePoint/targetPoint -->
-<mxCell id="arrow" style="..." edge="1" parent="1">
+<!-- 2. Arrows — MUST come before icons/boxes -->
+<mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" ...>
   <mxGeometry relative="1" as="geometry">
-    <mxPoint x="1279" y="500" as="sourcePoint"/>
-    <mxPoint x="119" y="500" as="targetPoint"/>
-    <Array as="points">
-      <mxPoint x="1279" y="560"/>
-      <mxPoint x="119" y="560"/>
-    </Array>
+    <mxPoint x="200" y="150" as="sourcePoint"/>
+    <mxPoint x="500" y="150" as="targetPoint"/>
   </mxGeometry>
 </mxCell>
+
+<!-- 3. Icons and boxes (rendered on top of arrows) -->
+<mxCell id="ec2" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2" .../>
 ```
 
-### 6.6. edgeLabel Offset Adjustment
-
-Adjust offset attribute to distance arrow labels from arrows:
-
+### Edge Label Offset
 ```xml
-<!-- Place above arrow (negative value to distance) -->
+<!-- Label above arrow -->
 <mxPoint x="0" y="-40" as="offset"/>
 
-<!-- Place below arrow (positive value to distance) -->
+<!-- Label below arrow -->
 <mxPoint x="0" y="40" as="offset"/>
 ```
 
-### 6.7. Remove Unnecessary Elements
+## AWS Icon Reference
 
-- Remove decorative icons irrelevant to context
-- Example: If ECR exists, separate Docker icon is unnecessary
-
-### 6.8. Labels and Headings
-
-- Service name only: 1 line
-- Service name + supplementary info: 2 lines with line break
-- Redundant notation (e.g., ECR Container Registry): shorten to 1 line
-- Use `&lt;br&gt;` tag for line breaks
-
-### 6.9. Background Frame and Internal Element Placement
-
-When placing elements inside background frames (grouping boxes),
-ensure sufficient margin.
-
-- YOU MUST: Internal elements must have at least 30px margin from frame boundary
-- YOU MUST: Account for rounded corners (`rounded=1`) and stroke width
-- YOU MUST: Always visually verify PNG output for overflow
-
-Coordinate calculation verification:
-
-```text
-Background frame: y=20, height=400 -> range is y=20-420
-Internal element top: frame y + 30 or more (e.g., y=50)
-Internal element bottom: frame y + height - 30 or less (e.g., up to y=390)
-```
-
-Bad example (may overflow):
-
-```xml
-<!-- Background frame -->
-<mxCell id="bg" style="rounded=1;strokeWidth=3;...">
-  <mxGeometry x="500" y="20" width="560" height="400" />
-</mxCell>
-<!-- Text: y=30 is too close to frame top (y=20) -->
-<mxCell id="label" value="Title" style="text;...">
-  <mxGeometry x="510" y="30" width="540" height="35" />
-</mxCell>
-```
-
-Good example (sufficient margin):
-
-```xml
-<!-- Background frame -->
-<mxCell id="bg" style="rounded=1;strokeWidth=3;...">
-  <mxGeometry x="500" y="20" width="560" height="430" />
-</mxCell>
-<!-- Text: y=50 is 30px from frame top (y=20) -->
-<mxCell id="label" value="Title" style="text;...">
-  <mxGeometry x="510" y="50" width="540" height="35" />
-</mxCell>
-```
-
-## 7. Reference
-
-- [Layout Guidelines](references/layout-guidelines.md)
-- [AWS Icons](references/aws-icons.md)
-- [AWS Icon Search Script](scripts/find_aws_icon.py)
-
-AWS icon search examples:
-
+Search for icons:
 ```sh
 python ~/.claude/skills/draw-io/scripts/find_aws_icon.py ec2
 python ~/.claude/skills/draw-io/scripts/find_aws_icon.py lambda
 ```
 
-## 8. Checklist
+Full catalog: [references/aws-icons.md](references/aws-icons.md)
+Layout rules in depth: [references/layout-guidelines.md](references/layout-guidelines.md)
 
-- [ ] No background color set (page="0")
-- [ ] Font size appropriate (larger recommended)
-- [ ] Arrows placed at back layer
-- [ ] Arrows not overlapping labels (verify in PNG)
-- [ ] Arrow start/end sufficiently distant from labels (at least 20px)
-- [ ] Arrows not penetrating boxes or icons (verify in PNG)
-- [ ] Internal elements not overflowing background frame (verify in PNG)
-- [ ] 30px+ margin between background frame and internal elements
-- [ ] AWS service names are official names/correct abbreviations
-- [ ] AWS icons are latest version (mxgraph.aws4.*)
-- [ ] No unnecessary elements remaining
-- [ ] Visually verified PNG conversion
+## Diagram Type Selector
 
-## 9. Image Display in reveal.js Slides
+| When the user asks for… | Recommend this diagram type |
+|---|---|
+| "How does the system work?" | Context Diagram |
+| "What are the main components?" | System Diagram |
+| "How are services wired together?" | Component Diagram |
+| "Where does it run / what regions?" | Deployment Diagram |
+| "How does data move?" | Data Flow Diagram |
+| "What happens step by step?" | Sequence Diagram |
 
-Add `auto-stretch: false` to YAML header:
+## When Things Go Wrong
 
-```yaml
----
-title: "Your Presentation"
-format:
-  revealjs:
-    auto-stretch: false
----
-```
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| Icon renders as empty box or placeholder | Using `mxgraph.aws3.*` (deprecated) | Replace with `mxgraph.aws4.*` equivalent |
+| Arrow appears on top of icons, obscuring them | Arrow element declared after icon cells in XML | Move arrow `mxCell` entries above icon cells |
+| Text overflows container boundary in PNG | Margin calculation ignored strokeWidth | Add `strokeWidth × 2` to 30px base margin |
+| Connector endpoint snaps to wrong position | Using `exitX`/`exitY` on a text element | Switch to explicit `mxPoint sourcePoint`/`targetPoint` |
+| PNG background is white instead of transparent | `background="#ffffff"` in mxGraphModel | Remove attribute or set `page="0"` |
+| Image too small / blurry in reveal.js | `auto-stretch` not disabled | Add `auto-stretch: false` to slide YAML header |
+| Font differs between elements | `fontFamily` not set per-cell, only on model | Set `fontFamily=Noto Sans JP` in each cell's style |
 
-This ensures correct image display on mobile devices.
+## Quality Checklist
+
+- [ ] No `background="#ffffff"` (transparent, `page="0"`)
+- [ ] Font size ≥ 18px; `fontFamily` set on model and each text cell
+- [ ] All arrows declared before icon/box cells in XML
+- [ ] Arrow endpoints 20px+ clear of label bounding boxes
+- [ ] Internal elements: 30px + (strokeWidth × 2) margin from container edges
+- [ ] AWS icons use `mxgraph.aws4.*` (not aws3)
+- [ ] AWS service labels use official full names
+- [ ] No redundant decorative icons
+- [ ] PNG conversion run and visually inspected
+- [ ] reveal.js: `auto-stretch: false` in YAML if used in slides

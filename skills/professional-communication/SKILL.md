@@ -1,267 +1,85 @@
 ---
 name: professional-communication
-description: Guide technical communication for software developers. Covers email structure, team messaging etiquette, meeting agendas, and adapting messages for technical vs non-technical audiences. Use when drafting professional messages, preparing meeting communications, or improving written communication.
+description: Craft, improve, or structure professional written communication for technical contexts — email, async chat, meeting summaries, status updates, and audience-adapted technical explanations. Trigger phrases: "write an email", "draft a message", "help me communicate", "status update", "meeting agenda", "translate this for stakeholders", "improve my message", "how should I phrase this".
 allowed-tools: Read, Glob, Grep
 ---
 
-# Professional Communication
+## Mindset
 
-## Overview
+1. **The recipient's cognitive load is the only metric that matters.** A message is only as good as what the reader does with it. If they have to re-read, ask a clarifying question, or forward it to someone else, the communication failed — regardless of how accurate or thorough it was.
 
-This skill provides frameworks and guidance for effective professional communication in software development contexts. Whether you're writing an email to stakeholders, crafting a team chat message, or preparing meeting agendas, these principles help you communicate clearly and build professional credibility.
+2. **Urgency and importance are almost never self-evident.** Every sender thinks their message is high-priority. Explicit signals ("Decision needed by EOD Friday") outperform implied urgency 100% of the time. The absence of a deadline means "whenever."
 
-**Core principle:** Effective communication isn't about proving how much you know - it's about ensuring your message is received and understood.
+3. **Tone debt compounds.** A single passive-aggressive or blame-shifting sentence can permanently change how a reader filters your future messages. Unlike code, communication debt has no automated linter — it requires deliberate reversion.
 
-## When to Use This Skill
+4. **Medium selection is the first communication decision.** Choosing the wrong medium (chat for a complex decision, email for an urgent blocker) wastes more time than poor wording. Format mismatch signals poor situational awareness to peers and managers.
 
-Use this skill when:
+5. **Precision protects you; vagueness protects no one.** Hedge language ("might," "could," "sort of") reads as uncertainty in technical contexts. Stakeholders interpret ambiguity as risk. Be precise even when the situation is uncertain — state the uncertainty explicitly instead.
 
-- Writing emails to teammates, managers, or stakeholders
-- Crafting team chat messages or async communications
-- Preparing meeting agendas or summaries
-- Translating technical concepts for non-technical audiences
-- Structuring status updates or reports
-- Improving clarity of written communication
+## Navigation
 
-**Keywords**: email, chat, teams, slack, discord, message, writing, communication, meeting, agenda, status update, report
+**Use this skill when**:
+- Drafting or improving any written professional message (email, chat, Slack/Teams, async update)
+- Adapting technical content for non-technical audiences (executives, clients, product)
+- Structuring meeting agendas, summaries, or post-mortems
+- Handling escalations, conflict-adjacent communications, or sensitive announcements
+- The user says "help me say this," "is this too harsh," "how do I ask for X," or "translate this"
 
-## Core Frameworks
+**Do NOT use this skill when**:
+- The task is a difficult conversation requiring emotional intelligence — use `feedback-mastery` instead
+- The output is formal legal, HR, or compliance documentation — those require domain-specific review beyond communication framing
+- The user needs speech/presentation coaching (different register, different skill)
 
-### The What-Why-How Structure
+**Quick disambiguation**:
+- Feedback to a colleague → `feedback-mastery`
+- Written message, update, or audience translation → this skill
+- Both → use this skill first, then flag `feedback-mastery` for delivery coaching
 
-Use this universal framework to organize any professional message:
+## Philosophy
 
-| Component | Purpose | Example |
-| --- | --- | --- |
-| **What** | State the topic/request clearly | "We need to delay the release by one week" |
-| **Why** | Explain the reasoning | "Critical bug found in payment processing" |
-| **How** | Outline next steps/action items | "QA will retest by Thursday; I'll update stakeholders Friday" |
+Professional communication is not about demonstrating expertise — it is about creating the conditions for the reader to act correctly. Every structural choice (subject line, bullet vs. prose, opening sentence) is either reducing or adding to the reader's work.
 
-**Apply to**: Emails, status updates, meeting talking points, technical explanations
+## NEVER
 
-### Three Golden Rules for Written Communication
+- **NEVER open with context before stating the ask** — recipients scan for what they need to do, not what led to it. Burying the request at the bottom of a long context section guarantees it gets missed or deferred. Lead with the ask; follow with the rationale.
 
-1. **Start with a clear subject/purpose** - Recipients should immediately grasp what your message is about
-2. **Use bullets, headlines, and scannable formatting** - Nobody wants a wall of text
-3. **Key messages first** - Busy people appreciate efficiency; state your main point upfront
+- **NEVER use a vague subject line** — "Quick question" or "Follow-up" forces the recipient to open the email to know whether it's urgent. This creates anxiety and delays action. Subject lines are pre-decisions: "API rate limit approval needed by Thursday" gives the reader everything before they open.
 
-### Audience Calibration
+- **NEVER send a "wall of text" as a chat message** — prose paragraphs in Slack/Teams signal that you didn't consider the reader's context. Chat is a scanning medium; documents are a reading medium. Long explanations belong in a linked document, not a thread.
 
-Before communicating, ask yourself:
+- **NEVER mark something urgent without stating the consequence of inaction** — "URGENT" without "if we don't decide by 3pm, the deploy is blocked until Monday" is noise. Stakeholders ignore unexplained urgency signals; they respond to explicit impact.
 
-1. **Who** are you writing to? (Technical peers, managers, stakeholders, customers)
-2. **What level of detail** do they need? (High-level overview vs implementation details)
-3. **What's the value** for them? (How does this affect their work/decisions?)
+- **NEVER write in passive voice when accountability matters** — "The bug was missed" distributes blame diffusely and signals defensiveness. "QA missed the bug in the payment flow" is harder to write but faster to resolve — it's clear who needs to be in the post-mortem. Passive voice in incident communications is a red flag.
 
-## Email Best Practices
+- **NEVER assume a technical peer wants more detail** — over-explanation to a peer signals distrust of their competence. If they need more, they'll ask. Default to the conclusion; offer depth if asked. This is the reverse of non-technical audience rules.
 
-### Subject Line Formula
+- **NEVER continue an async thread past 3 exchanges without offering a sync** — ping-pong past 3 rounds means the problem has ambiguity that text cannot resolve. Offering a 15-minute call is not a failure of async; it is the correct escalation path. Continuing to type is ego protection, not communication.
 
-| Instead of | Try |
-| --- | --- |
-| "Project updates" | "Project X: Status Update and Next Steps" |
-| "Question" | "Quick question: API rate limiting approach" |
-| "FYI" | "FYI: Deployment scheduled for Tuesday 3pm" |
+## When Things Go Wrong
 
-### Email Structure Template
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| No response after 48h | No explicit ask, unclear deadline, or wrong channel | Resend with explicit action request in the first sentence; switch medium if needed |
+| Reply asks clarifying questions you already answered | Information was buried in the middle; reader scanned and missed it | Restructure: ask/decision first, context second; use bold to surface key data |
+| Message perceived as aggressive or blame-y | Passive constructions + implicit accusations ("someone missed this") | Rewrite to specific facts + forward-looking action: what happened, what we'll do |
+| Executive asks to "simplify" after reading your update | Technical depth exceeded their decision-making need | Strip all implementation detail; restate as: business impact, risk, decision needed |
+| Message went to wrong audience (e.g., escalated too high) | Urgency misread medium; no escalation check | Send an immediate correction with explicit framing: "This was meant for [team]; forwarding to correct channel now" |
 
-```markdown
-**Subject:** [Project/Topic]: [Specific Purpose]
+## How to Draft Any Message
 
-Hi [Name],
+1. **Identify the output type**: decision request / status update / FYI / escalation / explanation. Different types have different templates — see `references/email-templates.md`.
+2. **State the ask or key fact in the first sentence.** No preamble.
+3. **Apply audience calibration**: engineering peer → technical precision; manager → impact + timeline; executive → decision needed + risk if none; customer → plain language + what it means for them.
+4. **Apply the "So What?" test** to every paragraph: if a paragraph doesn't change what the reader does or understands, cut it.
+5. **Check medium fit**: real-time urgency → call; complex decision → email + doc; quick coordination → chat.
 
-[1-2 sentences stating the key point or request upfront]
+## References
 
-**Context/Background:**
-- [Bullet point 1]
-- [Bullet point 2]
-
-**What I need from you:**
-- [Specific action or decision needed]
-- [Timeline if applicable]
-
-[Optional: Brief next steps or follow-up plan]
-
-Best,
-[Your name]
-```
-
-### Common Email Types
-
-| Type | Key Elements |
-| --- | --- |
-| **Status Update** | Progress summary, blockers, next steps, timeline |
-| **Request** | Clear ask, context, deadline, why it matters |
-| **Escalation** | Issue summary, impact, attempted solutions, needed decision |
-| **FYI/Announcement** | What changed, who's affected, any required action |
-
-**For templates**: See `references/email-templates.md`
-
-## Team Messaging Etiquette
-
-> **Note:** Examples use Slack terminology, but these principles apply equally to Microsoft Teams, Discord, or any team messaging platform.
-
-### When to Use Chat vs Email
-
-| Use Chat | Use Email |
-| --- | --- |
-| Quick questions with short answers | Detailed documentation needing records |
-| Real-time coordination | Formal communications to stakeholders |
-| Informal team discussions | Messages requiring careful review |
-| Time-sensitive updates | Complex explanations with multiple parts |
-
-### Team Messaging Best Practices
-
-1. **Use threads** - Keep main channels scannable; follow-ups go in threads
-2. **@mention thoughtfully** - Don't notify people unnecessarily
-3. **Channel organization** - Right channel for right topic
-4. **Be direct** - "Can you review my PR?" beats "Hey, are you busy?"
-5. **Async-friendly** - Write messages that don't require immediate response
-
-### The "No Hello" Principle
-
-Instead of:
-
-```text
-You: Hi
-You: Are you there?
-You: Can I ask you something?
-[waiting...]
-```
-
-Try:
-
-```text
-You: Hi Sarah - quick question about the deployment script.
-     Getting a permission error on line 42. Have you seen this before?
-     Here's the error: [paste error]
-```
-
-## Technical vs Non-Technical Communication
-
-### When to Be Technical vs Accessible
-
-| Audience | Approach |
-| --- | --- |
-| **Engineering peers** | Technical details, code examples, architecture specifics |
-| **Technical managers** | Balance of detail and high-level impact |
-| **Non-technical stakeholders** | Business impact, analogies, outcomes over implementation |
-| **Customers** | Plain language, what it means for them, avoid jargon |
-
-### Three Strategies for Simplification
-
-1. **Start with the big picture before details** - People process "why" before "how"
-2. **Simplify without losing accuracy** - Use analogies; replace jargon with plain language
-3. **Know when to switch** - Read the room; adjust based on questions and engagement
-
-### Jargon Translation Examples
-
-| Technical | Plain Language |
-| --- | --- |
-| "Microservices architecture" | "Our system is split into smaller, independent pieces that can scale separately" |
-| "Asynchronous message processing" | "Tasks are queued and processed in the background" |
-| "CI/CD pipeline" | "Automated process that tests and deploys our code" |
-| "Database migration" | "Updating how our data is organized and stored" |
-
-**For more examples**: See `references/jargon-simplification.md`
-
-## Writing Clarity Principles
-
-### Active Voice Over Passive Voice
-
-Active voice is clearer, more direct, and conveys authority:
-
-| Passive (avoid) | Active (prefer) |
-| --- | --- |
-| "A bug was identified by the team" | "The team identified a bug" |
-| "The feature will be implemented" | "We will implement the feature" |
-| "Errors were found during testing" | "Testing revealed errors" |
-
-### Eliminate Filler Words
-
-| Instead of | Use |
-| --- | --- |
-| "At this point in time" | "Now" |
-| "In the event that" | "If" |
-| "Due to the fact that" | "Because" |
-| "In order to" | "To" |
-| "I just wanted to check if" | "Can you" |
-
-### The "So What?" Test
-
-After writing, ask: "So what? Why does this matter to the reader?"
-
-If you can't answer clearly, restructure your message to lead with the value/impact.
-
-## Meeting Communication
-
-### Before: Agenda Best Practices
-
-Every meeting invite should include:
-
-1. **Clear objective** - What will be accomplished?
-2. **Agenda items** - Topics to cover with time estimates
-3. **Preparation required** - What should attendees bring/review?
-4. **Expected outcome** - Decision needed? Information sharing? Brainstorm?
-
-### During: Facilitation Tips
-
-- **Time-box discussions** - "Let's spend 5 minutes on this, then move on"
-- **Capture action items live** - Who does what by when
-- **Parking lot** - Note off-topic items for later
-
-### After: Summary Format
-
-```markdown
-**Meeting: [Topic] - [Date]**
-
-**Attendees:** [Names]
-
-**Key Decisions:**
-- [Decision 1]
-- [Decision 2]
-
-**Action Items:**
-- [ ] [Person]: [Task] - Due [Date]
-- [ ] [Person]: [Task] - Due [Date]
-
-**Next Steps:**
-- [Follow-up meeting if needed]
-- [Documents to share]
-```
-
-**For structures by meeting type**: See `references/meeting-structures.md`
-
-## Quick Reference: Communication Checklist
-
-Before sending any professional communication:
-
-- [ ] **Clear purpose** - Can the recipient understand intent in 5 seconds?
-- [ ] **Right audience** - Is this the appropriate person/channel?
-- [ ] **Key message first** - Is the main point upfront?
-- [ ] **Scannable** - Are there bullets, headers, short paragraphs?
-- [ ] **Action clear** - Does the recipient know what (if anything) they need to do?
-- [ ] **Jargon check** - Will the audience understand all terminology?
-- [ ] **Tone appropriate** - Is it professional but not cold?
-- [ ] **Proofread** - Any typos or unclear phrasing?
-
-## Additional Tools
-
-- `references/email-templates.md` - Ready-to-use email templates by type
-- `references/meeting-structures.md` - Structures for standups, retros, reviews
-- `references/jargon-simplification.md` - Technical-to-plain-language translations
+- `references/email-templates.md` — Ready-to-use templates by message type (status update, escalation, FYI, request)
+- `references/meeting-structures.md` — Agenda and summary formats for standups, retros, architecture reviews, post-mortems
+- `references/jargon-simplification.md` — Technical-to-plain-language translations by domain
+- `references/remote-async-communication.md` — Async-first principles, channel selection matrix, time zone norms; **load this when the communication is cross-timezone or fully async**
 
 ## Companion Skills
 
-- `feedback-mastery` - For difficult conversations and feedback delivery
-- `/draft-email` - Generate emails using these frameworks
-
----
-
-**Last Updated:** 2025-12-22
-
-## Version History
-
-- **v1.0.0** (2025-12-26): Initial release
-
----
+- `feedback-mastery` — Difficult conversations, delivering critical feedback, managing conflict

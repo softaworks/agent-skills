@@ -1,224 +1,74 @@
 ---
 name: plugin-forge
-description: Create and manage Claude Code plugins with proper structure, manifests, and marketplace integration. Use when creating plugins for a marketplace, adding plugin components (commands, agents, hooks), bumping plugin versions, or working with plugin.json/marketplace.json manifests.
+description: Create and manage Claude Code plugins — plugin.json manifests, marketplace.json registration, skills/commands/agents/hooks wiring, version bumping, and directory-source plugin troubleshooting. Use when building a new plugin, adding components to an existing plugin, diagnosing silent plugin load failures, or publishing to a marketplace.
 ---
 
-# CC Plugin Forge
+# Plugin Forge
 
-## Purpose
+## Mindset
 
-Build and manage Claude Code plugins with correct structure, manifests, and marketplace integration. Includes workflows, automation scripts, and reference docs.
+1. **The loader is picky about git.** Directory-source plugins must have a `.git` dir with at least one commit. A missing or empty repo causes a silent "source type not supported" failure — not an error you can see in the manifest or logs. Git first, always.
+2. **Two manifests, one truth.** Version drift between `plugin.json` and `marketplace.json` causes install mismatches that are hard to diagnose. Treat them as a single atomic update.
+3. **Agents don't hot-reload from marketplace.** Marketplace plugins load skills and commands on install; agent definitions only take effect after a session restart AND a `sudo cp` to `.claude/agents/`. The install command alone is not enough.
+4. **Skills load lazily; size the SKILL.md for that.** Only the `description` field is read at startup. The full SKILL.md loads only when the skill triggers. Bloated SKILL.md files waste context on every activation, not just startup.
+5. **Component paths resolve from plugin root, not from `.claude-plugin/`.** A common off-by-one: putting `commands/` inside `.claude-plugin/` instead of at the plugin root. The manifest only lives in `.claude-plugin/`; everything else is at root.
 
-## When to Use
+## Navigation
 
-- Creating new plugins for a marketplace
-- Adding/modifying plugin components (commands, skills, agents, hooks)
-- Updating plugin versions
-- Working with plugin or marketplace manifests
-- Setting up local plugin testing
-- Publishing plugins
+**Use this skill when**:
+- Scaffolding a new plugin (directory structure, manifest, marketplace registration)
+- Adding a component to an existing plugin (command, skill, agent, hook, MCP server)
+- Diagnosing a plugin that installs without error but shows no commands/skills in session
+- Bumping plugin versions across both manifests
+- Setting up a directory-source marketplace in `settings.json`
 
-## Getting Started
+**Do NOT use this skill when**:
+- Writing the *content* of a skill (SKILL.md authoring) — use skill-judge to evaluate SKILL.md quality after authoring, and agent-md-refactor when plugin instruction files become bloated
+- Configuring hooks behavior or MCP server logic — plugin-forge handles the wiring, not the implementation
+- Publishing to the upstream claude.ai plugin registry — that uses a different submission flow
 
-### Create New Plugin
+**Quick decision tree for ambiguous input**:
+- "My plugin isn't loading" → go to [When Things Go Wrong](#when-things-go-wrong) first
+- "I need to add a command" → component wiring path (see `references/plugin-structure.md`)
+- "I need a new plugin from scratch" → use `scripts/create_plugin.py` then register in marketplace
 
-Use `create_plugin.py` to generate plugin structure:
+## Philosophy
 
-```bash
-python scripts/create_plugin.py plugin-name \
-  --marketplace-root /path/to/marketplace \
-  --author-name "Your Name" \
-  --author-email "your.email@example.com" \
-  --description "Plugin description" \
-  --keywords "keyword1,keyword2" \
-  --category "productivity"
-```
+Plugin-forge exists because the gap between "plugin installed" and "plugin works" is filled with silent failures. Every decision here prioritizes diagnosability: correct git state, valid manifests, proper path placement, and restart discipline — because the loader gives you nothing when it fails.
 
-This automatically:
+## NEVER
 
-- Creates plugin directory structure
-- Generates `plugin.json` manifest
-- Creates README template
-- Updates `marketplace.json`
+- **NEVER create a directory-source plugin without initializing git** — the loader treats non-git directories as unsupported source type and fails silently with no error in the install output. Run `git init && git add -A && git commit -m "init"` before registering.
+- **NEVER update version in only one manifest** — `plugin.json` and `marketplace.json` must stay in sync. A mismatch causes the marketplace to serve stale metadata while the plugin runs the new code, making version tracking unreliable and rollbacks dangerous.
+- **NEVER put component directories inside `.claude-plugin/`** — `.claude-plugin/` is manifest-only. Commands, skills, agents, hooks, and `.mcp.json` must live at the plugin root. Nesting them inside `.claude-plugin/` results in silent load failure with no directory-not-found warning.
+- **NEVER rely on `/plugin install` alone to activate agents** — marketplace install does not copy agent definitions to `.claude/agents/`. Agents require a manual `cp` to the agents directory plus a full session restart. Skipping either step means the agent is invisible to Claude.
+- **NEVER name a skill directory with spaces or uppercase** — the skill loader uses the directory name as the skill identifier. Non-kebab-case names cause lookup mismatches where the skill exists on disk but cannot be resolved by the trigger system.
+- **NEVER ship a SKILL.md over 500 lines** — the full file loads into context on every skill activation. Oversized skills consume token budget silently and degrade performance across the whole session. Move heavy reference content to `references/` subdirectory files.
+- **NEVER hardcode absolute paths in manifests or hooks** — use `${CLAUDE_PLUGIN_ROOT}` for dynamic resolution in hooks/MCP configs. Absolute paths break portability across machines and for other users of a shared marketplace.
 
-### Bump Version
+## When Things Go Wrong
 
-Use `bump_version.py` to update versions in both manifests:
-
-```bash
-python scripts/bump_version.py plugin-name major|minor|patch \
-  --marketplace-root /path/to/marketplace
-```
-
-Semantic versioning:
-
-- **major**: Breaking changes (1.0.0 → 2.0.0)
-- **minor**: New features, refactoring (1.0.0 → 1.1.0)
-- **patch**: Bug fixes, docs (1.0.0 → 1.0.1)
-
-## Development Workflow
-
-### 1. Create Structure
-
-Manual approach (if not using script):
-
-```bash
-mkdir -p plugins/plugin-name/.claude-plugin
-mkdir -p plugins/plugin-name/commands
-mkdir -p plugins/plugin-name/skills
-```
-
-### 2. Plugin Manifest
-
-File: `plugins/plugin-name/.claude-plugin/plugin.json`
-
-```json
-{
-  "name": "plugin-name",
-  "version": "0.1.0",
-  "description": "Plugin description",
-  "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com"
-  },
-  "keywords": ["keyword1", "keyword2"]
-}
-```
-
-### 3. Register in Marketplace
-
-Update `.claude-plugin/marketplace.json`:
-
-```json
-{
-  "name": "plugin-name",
-  "source": "./plugins/plugin-name",
-  "description": "Plugin description",
-  "version": "0.1.0",
-  "keywords": ["keyword1", "keyword2"],
-  "category": "productivity"
-}
-```
-
-### 4. Add Components
-
-Create in respective directories:
-
-| Component | Location | Format |
-|-----------|----------|--------|
-| Commands | `commands/` | Markdown with frontmatter |
-| Skills | `skills/<name>/` | Directory with `SKILL.md` |
-| Agents | `agents/` | Markdown definitions |
-| Hooks | `hooks/hooks.json` | Event handlers |
-| MCP Servers | `.mcp.json` | External integrations |
-
-### 5. Local Testing
-
-```bash
-# Add marketplace
-/plugin marketplace add /path/to/marketplace-root
-
-# Install plugin
-/plugin install plugin-name@marketplace-name
-
-# After changes: reinstall
-/plugin uninstall plugin-name@marketplace-name
-/plugin install plugin-name@marketplace-name
-```
-
-## Plugin Patterns
-
-### Framework Plugin
-
-For framework-specific guidance (React, Vue, etc.):
-
-```
-plugins/framework-name/
-├── .claude-plugin/plugin.json
-├── skills/
-│   └── framework-name/
-│       ├── SKILL.md
-│       └── references/
-├── commands/
-│   └── prime/
-│       ├── components.md
-│       └── framework.md
-└── README.md
-```
-
-### Utility Plugin
-
-For tools and commands:
-
-```
-plugins/utility-name/
-├── .claude-plugin/plugin.json
-├── commands/
-│   ├── action1.md
-│   └── action2.md
-└── README.md
-```
-
-### Domain Plugin
-
-For domain-specific knowledge:
-
-```
-plugins/domain-name/
-├── .claude-plugin/plugin.json
-├── skills/
-│   └── domain-name/
-│       ├── SKILL.md
-│       ├── references/
-│       └── scripts/
-└── README.md
-```
-
-## Command Naming
-
-Subdirectory-based namespacing with `:` separator:
-
-- `commands/namespace/command.md` → `/namespace:command`
-- `commands/simple.md` → `/simple`
-
-Examples:
-
-- `commands/prime/vue.md` → `/prime:vue`
-- `commands/docs/generate.md` → `/docs:generate`
-
-## Version Management
-
-**Important:** Update version in BOTH locations:
-
-1. `plugins/<name>/.claude-plugin/plugin.json`
-2. `.claude-plugin/marketplace.json`
-
-Use `bump_version.py` to automate.
-
-## Git Commits
-
-Use conventional commits:
-
-```bash
-git commit -m "feat: add new plugin"
-git commit -m "fix: correct plugin manifest"
-git commit -m "docs: update plugin README"
-git commit -m "feat!: breaking change"
-```
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Plugin installs without error but `/command` is not available | Component dirs inside `.claude-plugin/` instead of plugin root, OR session not restarted after install | Move dirs to plugin root; `/plugin uninstall` then reinstall; restart session |
+| Directory-source install fails with "source type not supported" | Plugin directory has no `.git` or zero commits | `git init && git add -A && git commit -m "init"` in plugin root, then reinstall |
+| Plugin installs but shows wrong version | `plugin.json` and `marketplace.json` versions are out of sync | Use `scripts/bump_version.py` to update both atomically; uninstall and reinstall |
+| Agent defined in plugin is not visible to Claude | Agents don't auto-load from marketplace; manual copy required | `sudo cp agents/<name>.md ~/.claude/agents/` and restart session completely |
+| Skill triggers but reads wrong SKILL.md | Skill directory name doesn't match the `name:` field in frontmatter | Align directory name and frontmatter `name:` field; they must be identical |
+| Hook fires but `${CLAUDE_PLUGIN_ROOT}` resolves incorrectly | Plugin was installed to a non-standard path | Verify install path with `/plugin list`; check hooks.json uses variable not literal path |
+| MCP server from plugin doesn't appear in session | `.mcp.json` is missing or inside `.claude-plugin/` instead of plugin root | Move `.mcp.json` to plugin root; reinstall plugin |
 
 ## Reference Docs
 
-Detailed documentation included:
-
 | Reference | Content |
 |-----------|---------|
-| `references/plugin-structure.md` | Directory structure, manifest schema, components |
-| `references/marketplace-schema.md` | Marketplace format, plugin entries, distribution |
-| `references/workflows.md` | Step-by-step workflows, patterns, publishing |
+| `references/plugin-structure.md` | Full directory schema, manifest fields, component placement rules |
+| `references/marketplace-schema.md` | Marketplace JSON format, source types (local/GitHub/git URL), team distribution via settings.json |
+| `references/workflows.md` | Step-by-step create/test/publish workflows, conventional commit conventions |
 
-### Scripts
+## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/create_plugin.py` | Scaffold new plugin |
-| `scripts/bump_version.py` | Update versions |
+| `scripts/create_plugin.py` | Scaffold new plugin with correct structure, manifests, and marketplace registration |
+| `scripts/bump_version.py` | Update version atomically in both `plugin.json` and `marketplace.json` |

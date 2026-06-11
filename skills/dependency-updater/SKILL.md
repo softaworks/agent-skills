@@ -1,491 +1,98 @@
 ---
 name: dependency-updater
-description: Smart dependency management for any language. Auto-detects project type, applies safe updates automatically, prompts for major versions, diagnoses and fixes dependency issues.
+description: Smart dependency management for any language. Auto-detects project type, applies safe updates automatically, prompts for major versions, diagnoses and fixes dependency issues. Trigger phrases: "update dependencies", "update deps", "outdated packages", "dependency audit", "fix dependency conflicts", "security audit packages", "why won't my packages install".
 license: MIT
 metadata:
-  version: 1.0.0
+  version: 2.0.0
 ---
 
 # Dependency Updater
 
-Smart dependency management for any language with automatic detection and safe updates.
+## Mindset
 
----
+- **Pinned versions are load-bearing** — a fixed version without `^` or `~` is a *decision*, not an oversight. Someone got burned and locked it. Never "fix" it to a range without checking git blame.
+- **Lock files are the ground truth** — `package.json` is a *request*, `package-lock.json` is *what actually runs*. When they diverge (e.g., after a `git pull` that updated package.json but not the lock), `npm install` silently installs different code than production.
+- **`npm audit --force` is a footgun** — it resolves vulnerabilities by *downgrading or breaking semver constraints*, leaving the project in an inconsistent state that CI can't reproduce. Practitioners use targeted upgrades, not force.
+- **Major version bumps require changelog archaeology** — tools can detect the version delta but not whether your usage of the old API was in the breaking-change surface. Always check the migration guide before approving a major.
+- **Monorepos compound the risk** — updating a shared package at the root can silently change behavior in workspaces that weren't tested. Run workspace-scoped installs after root changes.
 
-## Quick Start
+## Navigation
 
+**Use this skill when**:
+- User asks to update, upgrade, or refresh dependencies/packages/deps
+- User reports install failures, peer-dependency warnings, or version conflicts
+- User asks for a security audit or vulnerability scan of packages
+- User asks what packages are outdated or stale
+
+**Do NOT use this skill when**:
+- User wants to *add a new* package (that's a feature task, not an update)
+- User is working inside a container/locked environment with no write access to package files
+- The project uses Nix, Bazel, or vendored deps — standard update tools break these
+
+**Quick decision tree**:
 ```
-update my dependencies
+User request type?
+├── "update" / "outdated" → full update workflow (detect → scan → apply → audit)
+├── "security" / "vuln" / "audit" → audit-only workflow
+├── "broken" / "can't install" / "conflict" → diagnosis mode
+└── "specific package X" → targeted update, not bulk
 ```
 
-The skill auto-detects your project type and handles the rest.
+## Philosophy
 
----
+Safety over convenience: auto-apply only what semver guarantees is backward-compatible, gate everything else behind explicit user approval, and never mutate pinned versions or lock files in ways the ecosystem's install command wouldn't.
 
-## Triggers
+## NEVER
 
-| Trigger | Example |
-|---------|---------|
-| Update dependencies | "update dependencies", "update deps" |
-| Check outdated | "check for outdated packages" |
-| Fix dependency issues | "fix my dependency problems" |
-| Security audit | "audit dependencies for vulnerabilities" |
-| Diagnose deps | "diagnose dependency issues" |
+- **NEVER run `npm audit --force`** — it breaks semver constraints, can *downgrade* packages to older vulnerable versions, and produces a lock file that diverges from package.json in ways that break reproducible installs. Use `npm audit fix` (no `--force`) or upgrade the specific package manually.
+- **NEVER run `pip-review --auto` without a virtualenv active** — it upgrades system Python packages, which breaks OS-level tools that depend on specific versions (particularly on Debian/Ubuntu). Always confirm a venv is active first.
+- **NEVER auto-apply MAJOR updates in bulk** — even if the user says "update everything", batch-approving majors makes it impossible to bisect which package broke the build. Present each major individually with current → new and a link to the changelog.
+- **NEVER delete and regenerate a lock file as the first fix** — `rm package-lock.json && npm install` wipes all transitive version pins, meaning dependencies-of-dependencies can jump to breaking versions. Use this only as a last resort after targeted fixes fail.
+- **NEVER run `go get -u ./...` in a module with replace directives** — `-u` ignores `replace` directives for indirect dependencies, silently upgrading past the pinned fork/patch. Use `go get pkg@version` for each module individually.
+- **NEVER skip `go mod tidy` after `go get` updates** — Go's toolchain won't error, but `go.sum` will contain stale hashes that fail verification in hermetic CI environments.
+- **NEVER treat `cargo update` as safe for workspace crates** — `cargo update` respects semver *ranges* in Cargo.toml but doesn't check that workspace member crates compile together. Always run `cargo check --workspace` after.
 
----
+## When Things Go Wrong
 
-## Supported Languages
-
-| Language | Package File | Update Tool | Audit Tool |
-|----------|--------------|-------------|------------|
-| **Node.js** | package.json | `taze` | `npm audit` |
-| **Python** | requirements.txt, pyproject.toml | `pip-review` | `safety`, `pip-audit` |
-| **Go** | go.mod | `go get -u` | `govulncheck` |
-| **Rust** | Cargo.toml | `cargo update` | `cargo audit` |
-| **Ruby** | Gemfile | `bundle update` | `bundle audit` |
-| **Java** | pom.xml, build.gradle | `mvn versions:*` | `mvn dependency:*` |
-| **.NET** | *.csproj | `dotnet outdated` | `dotnet list package --vulnerable` |
-
----
-
-## Quick Reference
-
-| Update Type | Version Change | Action |
-|-------------|----------------|--------|
-| **Fixed** | No `^` or `~` | Skip (intentionally pinned) |
-| **PATCH** | `x.y.z` → `x.y.Z` | Auto-apply |
-| **MINOR** | `x.y.z` → `x.Y.0` | Auto-apply |
-| **MAJOR** | `x.y.z` → `X.0.0` | Prompt user individually |
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| `npm install` succeeds locally but CI fails | Lock file not committed, or committed with wrong line endings | `git add package-lock.json` with `.gitattributes` setting `text=auto eol=lf` |
+| `npm audit fix` creates new vulnerabilities | Downgraded a transitive dep to an older vulnerable version | `git checkout package-lock.json`, upgrade the *direct* dep that pulls in the vulnerable transitive |
+| Peer dependency warnings flood output but nothing breaks | npm v7+ installs peers automatically; warnings are noise if app works | Check with `npm ls <peer>` — if only one version installed, safe to ignore |
+| `pip install -r requirements.txt` works but `pip check` fails | requirements.txt has incompatible upper bounds from different authors | Use `pip-compile` (pip-tools) to resolve a coherent set; add `pip check` to CI |
+| `bundle update` downgrades an unrelated gem | Bundler re-solves the whole graph; a newer gem narrowed a shared constraint | Use `bundle update --conservative gem-name` to update only the target gem's graph |
+| `go get -u` introduces a module that fails `go mod verify` | Checksum mismatch — module contents changed after publish (supply chain risk) | Do NOT ignore; report to the module maintainer; pin to last known-good SHA |
 
 ---
 
 ## Workflow
 
-```
-User Request
-    │
-    ▼
-┌─────────────────────────────────────────────────────┐
-│ Step 1: DETECT PROJECT TYPE                         │
-│ • Scan for package files (package.json, go.mod...) │
-│ • Identify package manager                          │
-├─────────────────────────────────────────────────────┤
-│ Step 2: CHECK PREREQUISITES                         │
-│ • Verify required tools are installed               │
-│ • Suggest installation if missing                   │
-├─────────────────────────────────────────────────────┤
-│ Step 3: SCAN FOR UPDATES                            │
-│ • Run language-specific outdated check              │
-│ • Categorize: MAJOR / MINOR / PATCH / Fixed         │
-├─────────────────────────────────────────────────────┤
-│ Step 4: AUTO-APPLY SAFE UPDATES                     │
-│ • Apply MINOR and PATCH automatically               │
-│ • Report what was updated                           │
-├─────────────────────────────────────────────────────┤
-│ Step 5: PROMPT FOR MAJOR UPDATES                    │
-│ • AskUserQuestion for each MAJOR update             │
-│ • Show current → new version                        │
-├─────────────────────────────────────────────────────┤
-│ Step 6: APPLY APPROVED MAJORS                       │
-│ • Update only approved packages                     │
-├─────────────────────────────────────────────────────┤
-│ Step 7: FINALIZE                                    │
-│ • Run install command                               │
-│ • Run security audit                                │
-└─────────────────────────────────────────────────────┘
-```
+**Step 1 — Detect**: Scan for package files (`package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`, `Gemfile`, `pom.xml`, `*.csproj`). Check for workspace/monorepo patterns. Identify the package manager (npm vs yarn vs pnpm matters for lock file format).
+
+**Step 2 — Prerequisites**: Verify tooling. For Node.js, prefer `taze` over `ncu` (taze respects workspace protocols). For Python, confirm virtualenv is active before any `pip` mutation.
+
+**Step 3 — Scan**: Run the ecosystem's outdated command. Categorize results:
+- Fixed (no range specifier) → **skip, note in report**
+- PATCH/MINOR within current range → **auto-apply**
+- MAJOR or outside current range → **queue for user approval**
+
+**Step 4 — Apply safe updates**: Apply PATCH + MINOR. For Node.js: `taze minor --write` then `npm install`. Run tests if available.
+
+**Step 5 — Gate majors**: For each MAJOR update, present: package name, current version, target version, and changelog URL. Ask individually. Apply only approved ones.
+
+**Step 6 — Audit**: Run the ecosystem's security scanner. Report findings by severity. Do NOT auto-fix — present the vulnerable package, the fix version, and whether it's a breaking change.
+
+**Step 7 — Report**: Summary of what changed, what was skipped (pinned), what needs manual attention (majors declined, unfixed vulns).
 
 ---
 
-## Commands by Language
+## Commands Reference
 
-### Node.js (npm/yarn/pnpm)
+See [`references/commands-by-language.md`](references/commands-by-language.md) for the full command reference per ecosystem.
 
-```bash
-# Check prerequisites
-scripts/check-tool.sh taze "npm install -g taze"
-
-# Scan for updates
-taze
-
-# Apply minor/patch
-taze minor --write
-
-# Apply specific majors
-taze major --write --include pkg1,pkg2
-
-# Monorepo support
-taze -r  # recursive
-
-# Security
-npm audit
-npm audit fix
-```
-
-### Python
-
-```bash
-# Check outdated
-pip list --outdated
-
-# Update all (careful!)
-pip-review --auto
-
-# Update specific
-pip install --upgrade package-name
-
-# Security
-pip-audit
-safety check
-```
-
-### Go
-
-```bash
-# Check outdated
-go list -m -u all
-
-# Update all
-go get -u ./...
-
-# Tidy up
-go mod tidy
-
-# Security
-govulncheck ./...
-```
-
-### Rust
-
-```bash
-# Check outdated
-cargo outdated
-
-# Update within semver
-cargo update
-
-# Security
-cargo audit
-```
-
-### Ruby
-
-```bash
-# Check outdated
-bundle outdated
-
-# Update all
-bundle update
-
-# Update specific
-bundle update --conservative gem-name
-
-# Security
-bundle audit
-```
-
-### Java (Maven)
-
-```bash
-# Check outdated
-mvn versions:display-dependency-updates
-
-# Update to latest
-mvn versions:use-latest-releases
-
-# Security
-mvn dependency:tree
-mvn dependency-check:check
-```
-
-### .NET
-
-```bash
-# Check outdated
-dotnet list package --outdated
-
-# Update specific
-dotnet add package PackageName
-
-# Security
-dotnet list package --vulnerable
-```
-
----
-
-## Diagnosis Mode
-
-When dependencies are broken, run diagnosis:
-
-### Common Issues & Fixes
-
-| Issue | Symptoms | Fix |
-|-------|----------|-----|
-| **Version Conflict** | "Cannot resolve dependency tree" | Clean install, use overrides/resolutions |
-| **Peer Dependency** | "Peer dependency not satisfied" | Install required peer version |
-| **Security Vuln** | `npm audit` shows issues | `npm audit fix` or manual update |
-| **Unused Deps** | Bloated bundle | Run `depcheck` (Node) or equivalent |
-| **Duplicate Deps** | Multiple versions installed | Run `npm dedupe` or equivalent |
-
-### Emergency Fixes
-
-```bash
-# Node.js - Nuclear reset
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install
-
-# Python - Clean virtualenv
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Go - Reset modules
-rm go.sum
-go mod tidy
-```
-
----
-
-## Security Audit
-
-Run security checks for any project:
-
-```bash
-# Node.js
-npm audit
-npm audit --json | jq '.metadata.vulnerabilities'
-
-# Python
-pip-audit
-safety check
-
-# Go
-govulncheck ./...
-
-# Rust
-cargo audit
-
-# Ruby
-bundle audit
-
-# .NET
-dotnet list package --vulnerable
-```
-
-### Severity Response
-
-| Severity | Action |
-|----------|--------|
-| **Critical** | Fix immediately |
-| **High** | Fix within 24h |
-| **Moderate** | Fix within 1 week |
-| **Low** | Fix in next release |
-
----
-
-## Anti-Patterns
-
-| Avoid | Why | Instead |
-|-------|-----|---------|
-| Update fixed versions | Intentionally pinned | Skip them |
-| Auto-apply MAJOR | Breaking changes | Prompt user |
-| Batch MAJOR prompts | Loses context | Prompt individually |
-| Skip lock file | Irreproducible builds | Always commit lock files |
-| Ignore security alerts | Vulnerabilities | Address by severity |
-
----
-
-## Verification Checklist
-
-After updates:
-
-- [ ] Updates scanned without errors
-- [ ] MINOR/PATCH auto-applied
-- [ ] MAJOR updates prompted individually
-- [ ] Fixed versions untouched
-- [ ] Lock file updated
-- [ ] Install command ran
-- [ ] Security audit passed (or issues noted)
-
----
-
-<details>
-<summary><strong>Deep Dive: Project Detection</strong></summary>
-
-The skill auto-detects project type by scanning for package files:
-
-| File Found | Language | Package Manager |
-|------------|----------|-----------------|
-| `package.json` | Node.js | npm/yarn/pnpm |
-| `requirements.txt` | Python | pip |
-| `pyproject.toml` | Python | pip/poetry |
-| `Pipfile` | Python | pipenv |
-| `go.mod` | Go | go modules |
-| `Cargo.toml` | Rust | cargo |
-| `Gemfile` | Ruby | bundler |
-| `pom.xml` | Java | Maven |
-| `build.gradle` | Java/Kotlin | Gradle |
-| `*.csproj` | .NET | dotnet |
-
-**Detection order matters for monorepos:**
-1. Check current directory first
-2. Then check for workspace/monorepo patterns
-3. Offer to run recursively if applicable
-
-</details>
-
-<details>
-<summary><strong>Deep Dive: Node.js with taze</strong></summary>
-
-### Prerequisites
-
-```bash
-# Install taze globally (recommended)
-npm install -g taze
-
-# Or use npx
-npx taze
-```
-
-### Smart Update Flow
-
-```bash
-# 1. Scan all updates
-taze
-
-# 2. Apply safe updates (minor + patch)
-taze minor --write
-
-# 3. For each major, prompt user:
-#    "Update @types/node from ^20.0.0 to ^22.0.0?"
-#    If yes, add to approved list
-
-# 4. Apply approved majors
-taze major --write --include approved-pkg1,approved-pkg2
-
-# 5. Install
-npm install  # or pnpm install / yarn
-```
-
-### Auto-Approve List
-
-Some packages have frequent major bumps but are backward-compatible:
-
-| Package | Reason |
-|---------|--------|
-| `lucide-react` | Icon library, majors are additive |
-| `@types/*` | Type definitions, usually safe |
-
-</details>
-
-<details>
-<summary><strong>Deep Dive: Version Strategies</strong></summary>
-
-### Semantic Versioning
-
-```
-MAJOR.MINOR.PATCH (e.g., 2.3.1)
-
-MAJOR: Breaking changes - requires code changes
-MINOR: New features - backward compatible
-PATCH: Bug fixes - backward compatible
-```
-
-### Range Specifiers
-
-| Specifier | Meaning | Example |
-|-----------|---------|---------|
-| `^1.2.3` | Minor + Patch OK | `>=1.2.3 <2.0.0` |
-| `~1.2.3` | Patch only | `>=1.2.3 <1.3.0` |
-| `1.2.3` | Exact (fixed) | Only `1.2.3` |
-| `>=1.2.3` | At least | Any `>=1.2.3` |
-| `*` | Any | Latest (dangerous) |
-
-### Recommended Strategy
-
-```json
-{
-  "dependencies": {
-    "critical-lib": "1.2.3",      // Exact for critical
-    "stable-lib": "~1.2.3",       // Patch only for stable
-    "modern-lib": "^1.2.3"        // Minor OK for active
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Deep Dive: Conflict Resolution</strong></summary>
-
-### Node.js Conflicts
-
-**Diagnosis:**
-```bash
-npm ls package-name      # See dependency tree
-npm explain package-name # Why installed
-yarn why package-name    # Yarn equivalent
-```
-
-**Resolution with overrides:**
-```json
-// package.json
-{
-  "overrides": {
-    "lodash": "^4.18.0"
-  }
-}
-```
-
-**Resolution with resolutions (Yarn):**
-```json
-{
-  "resolutions": {
-    "lodash": "^4.18.0"
-  }
-}
-```
-
-### Python Conflicts
-
-**Diagnosis:**
-```bash
-pip check
-pipdeptree -p package-name
-```
-
-**Resolution:**
-```bash
-# Use virtual environment
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Or use constraints
-pip install -c constraints.txt -r requirements.txt
-```
-
-</details>
-
----
-
-## Script Reference
+## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/check-tool.sh` | Verify tool is installed |
-| `scripts/run-taze.sh` | Run taze with proper flags |
-
----
-
-## Related Tools
-
-| Tool | Language | Purpose |
-|------|----------|---------|
-| [taze](https://github.com/antfu-collective/taze) | Node.js | Smart dependency updates |
-| [npm-check-updates](https://github.com/raineorshine/npm-check-updates) | Node.js | Alternative to taze |
-| [pip-review](https://github.com/jgonggrijp/pip-review) | Python | Interactive pip updates |
-| [cargo-edit](https://github.com/killercup/cargo-edit) | Rust | Cargo dependency management |
-| [bundler-audit](https://github.com/rubysec/bundler-audit) | Ruby | Security auditing |
+| `scripts/check-tool.sh` | Verify a tool is installed, print install hint if missing |
+| `scripts/run-taze.sh` | Run taze with safe flags (minor mode, workspace-aware) |

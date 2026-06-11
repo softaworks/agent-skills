@@ -1,221 +1,90 @@
 ---
 name: excalidraw
-description: "Use when working with *.excalidraw or *.excalidraw.json files, user mentions diagrams/flowcharts, or requests architecture visualization - delegates all Excalidraw operations to subagents to prevent context exhaustion from verbose JSON (single files: 4k-22k tokens, can exceed read limits)"
+description: "Use when working with *.excalidraw or *.excalidraw.json files, user requests diagram creation/editing/explanation, mentions 'flowchart', 'architecture diagram', or 'Excalidraw' — delegates all file operations to subagents to prevent context exhaustion (single files: 4k–22k tokens)"
 ---
 
-# Excalidraw Subagent Delegation
+## Mindset
 
-## Overview
+- Excalidraw files are **verbosity traps**: 79 elements × ~280 tokens/element = 22k tokens, but only `text` and `arrow` elements carry semantic content (~10% of file). The other 90% is visual noise.
+- **Subagent isolation is free.** A subagent reading a 22k-token file costs nothing to the main context — only its summary (~500 tokens) crosses the boundary. This is always the right trade.
+- The rationalization "I'll just quickly check the file" is the most common failure mode. "Quick checks" load the full JSON regardless of intent.
+- Token cost comes from volume, not complexity. A "simple, straightforward" Excalidraw file is still 4k–22k tokens.
+- Frame elements are grouping hints — subagents should use them to chunk their summaries into logical sections rather than flat component lists.
 
-**Core principle:** Main agents NEVER read Excalidraw files directly. Always delegate to subagents to isolate context consumption.
+## Navigation
 
-Excalidraw files are JSON with high token cost but low information density. Single files range from 4k-22k tokens (largest can exceed read tool limits). Reading multiple diagrams quickly exhausts context budget (7 files = 67k tokens = 33% of budget).
+**Use this skill when:**
+- File path ends in `.excalidraw` or `.excalidraw.json`
+- User says: explain/update/create/compare diagram, show architecture, visualize flow, draw a flowchart
+- Any operation touching Excalidraw files, including "just checking what's in" one
 
-## The Problem
+**Do NOT use this skill when:**
+- User is asking about Mermaid, draw.io, Lucidchart, or other diagram formats
+- User wants to generate a diagram concept only (no file I/O) — then just produce the design description
 
-Excalidraw JSON structure:
-- Each shape has 20+ properties (x, y, width, height, strokeColor, seed, version, etc.)
-- Most properties are visual metadata (positioning, styling, roughness)
-- Actual content: text labels and element relationships (<10% of file)
-- **Signal-to-noise ratio is extremely low**
+**Decision tree:**
+```
+Does the task touch a *.excalidraw file?
+  YES → delegate to subagent (no exceptions)
+  NO  → does it involve creating a new diagram?
+          YES → delegate creation to subagent, get back file path + summary
+          NO  → this skill is not needed
+```
 
-Example: 14-element diagram = 596 lines, 16K, ~4k tokens. 79-element diagram = 2,916 lines, 88K, ~22k tokens (exceeds read limit).
+## Philosophy
 
-## When to Use
+Main agents are orchestrators, not file parsers. Every token spent parsing Excalidraw JSON is a token stolen from reasoning. Subagents are disposable context workers — use them for all file I/O and receive only the extracted meaning.
 
-**Trigger on ANY of these:**
-- File path contains `.excalidraw` or `.excalidraw.json`
-- User requests: "explain/update/create diagram", "show architecture", "visualize flow"
-- User mentions: "flowchart", "architecture diagram", "Excalidraw file"
-- Architecture/design documentation tasks involving visual artifacts
+## NEVER
 
-**Use delegation even for:**
-- "Small" files (smallest is 4k tokens - still significant)
-- "Quick checks" (checking component names still loads full JSON)
-- Single file operations (isolation prevents context pollution)
-- Modifications (don't need full format understanding in main context)
+- NEVER use the Read tool on a `.excalidraw` or `.excalidraw.json` file — because the read succeeds silently and consumes 4k–22k tokens before you realize it; there is no size warning.
+- NEVER rationalize reading a file as "one-time" or "just this once" — because every session starts fresh, so every read is "just this once"; the exception becomes the pattern.
+- NEVER pass raw Excalidraw JSON (or element arrays) back through subagent return values — because a 79-element return dumps the full 22k tokens right back into main context, defeating isolation entirely.
+- NEVER skip delegation for "small" files — because even the smallest real Excalidraw file is 4k tokens, and you cannot know the size without reading it (which is exactly what you're trying to avoid).
+- NEVER tell a subagent to "read the file and describe everything you see" — because without explicit constraints, subagents default to quoting element details verbatim; always specify the Return format with "plain text only, no JSON".
+- NEVER attempt to write Excalidraw JSON from memory without the element schema — because generated files with wrong `version`, missing `appState`, or invalid `id` formats silently fail to open in Excalidraw; use the schema in references/delegation-templates.md.
+- NEVER use grep/strings to extract text from Excalidraw files in main context — because the surrounding JSON lines still load into the Read tool output; use `jq` inside the subagent instead.
+
+## When Things Go Wrong
+
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| Subagent returns a wall of JSON instead of a summary | Task prompt missing explicit Return format constraint | Re-delegate with "IMPORTANT: Return ONLY plain text bullet lists — no JSON, no element IDs" prepended |
+| File exceeds Read tool limit in subagent (>2000 lines) | 79+ element diagrams hit the line cap | Instruct subagent to use Bash + `jq` to extract text/arrow elements before reading |
+| Created diagram won't open in Excalidraw | Invalid file structure or missing required fields | Verify subagent used the canonical wrapper: `{"type":"excalidraw","version":2,"source":"","elements":[...],"appState":{"gridSize":null},"files":{}}` |
+| Subagent positions new elements overlapping existing ones | No collision avoidance in modification prompt | Provide explicit position: tell subagent to find the bounding box of existing elements and offset by 200px |
+| Arrows missing from created diagram | Subagent created nodes but forgot connection elements | Check that the task template included explicit arrow creation steps; re-delegate with the Modify template from references/ |
 
 ## Delegation Pattern
 
-### Main Agent Responsibilities
+**Main agent responsibilities:**
+1. Detect Excalidraw file involvement
+2. Choose the correct template (Read / Modify / Create / Compare)
+3. Dispatch Task tool with the template
+4. Receive text-only summary
+5. Respond to user — main context never touches the file
 
-**NEVER:**
-- ❌ Use Read tool on *.excalidraw files
-- ❌ Parse Excalidraw JSON in main context
-- ❌ Load multiple diagrams for comparison
-- ❌ Inspect file to "understand the format"
-
-**ALWAYS:**
-- ✅ Delegate ALL Excalidraw operations to subagents
-- ✅ Provide clear task description to subagent
-- ✅ Request text-only summaries (not raw JSON)
-- ✅ Keep diagram analysis isolated from main work
-
-### Subagent Task Templates
-
-#### Read/Understand Operation
-```
-Task: Extract and explain the components in [file.excalidraw.json]
-
-Approach:
-1. Read the Excalidraw JSON
-2. Extract only text elements (ignore positioning/styling)
-3. Identify relationships between components
-4. Summarize architecture/flow
-
-Return:
-- List of components/services with descriptions
-- Connection/dependency relationships
-- Key insights about the architecture
-- DO NOT return raw JSON or verbose element details
-```
-
-#### Modify Operation
-```
-Task: Add [component] to [file.excalidraw.json], connected to [existing-component]
-
-Approach:
-1. Read file to identify existing elements
-2. Find [existing-component] and its position
-3. Create new element JSON for [component]
-4. Add arrow elements for connections
-5. Write updated file
-
-Return:
-- Confirmation of changes made
-- Position of new element
-- IDs of created elements
-```
-
-#### Create Operation
-```
-Task: Create new Excalidraw diagram showing [description]
-
-Approach:
-1. Design layout for [number] components
-2. Create rectangle elements with text labels
-3. Add arrows showing relationships
-4. Use consistent styling (colors, fonts)
-5. Write to [file.excalidraw.json]
-
-Return:
-- Confirmation of file created
-- Summary of components included
-- File location
-```
-
-#### Compare Operation
-```
-Task: Compare architecture approaches in [file1] vs [file2]
-
-Approach:
-1. Read both files
-2. Extract text labels from each
-3. Identify structural differences
-4. Compare component relationships
-
-Return:
-- Key differences in architecture
-- Components unique to each approach
-- Relationship/flow differences
-- DO NOT return full element details from both files
-```
-
-## Common Rationalizations (STOP and Delegate Instead)
-
-| Excuse | Reality | What to Do |
-|--------|---------|------------|
-| "Direct reading is most efficient" | Consumes 4k-22k tokens unnecessarily | Delegate to subagent |
-| "It's token-efficient to read directly" | Baseline tests showed 9-45% budget used | Always delegate |
-| "This is optimal for one-time analysis" | "One-time" still pollutes main context | Subagent isolation |
-| "The JSON is straightforward" | Simplicity ≠ token efficiency | Delegate anyway |
-| "I need to understand the format" | Format understanding not needed in main agent | Subagent handles format |
-| "Within reasonable bounds" (18k tokens) | "Reasonable" is subjective rationalization | Hard rule: delegate |
-| "Just a quick check of components" | "Quick check" still loads full JSON | Extract text via subagent |
-| "File is small (16K)" | 4k tokens is NOT small | Size threshold doesn't matter |
-
-## Red Flags - STOP and Delegate
-
-Catch yourself about to:
-- Use Read tool on .excalidraw file
-- "Quickly check" what components exist
-- "Understand the structure" before modifying
-- Load file to "see what's there"
-- Compare multiple diagrams side-by-side
-- Parse JSON to "extract just the text"
-
-**All of these mean: Use Task tool with subagent instead.**
+**Load the full templates:** `references/delegation-templates.md` — read this file before constructing subagent tasks. It contains:
+- Exact `jq` commands for content extraction
+- Element schema (which fields carry meaning vs. noise)
+- Standard element dimensions and positioning conventions
+- Subagent failure recovery prompts
 
 ## Quick Reference
 
-| Operation | Main Agent Action | Subagent Returns |
-|-----------|-------------------|------------------|
-| **Understand diagram** | Delegate with "Extract and explain" template | Component list + relationships |
-| **Modify diagram** | Delegate with "Add [X] connected to [Y]" template | Confirmation + changes made |
-| **Create diagram** | Delegate with "Create showing [description]" template | File location + summary |
-| **Compare diagrams** | Delegate with "Compare [A] vs [B]" template | Key differences (not raw JSON) |
+| Operation | Template to Use | Subagent Returns |
+|-----------|----------------|------------------|
+| Understand diagram | Read/Understand | Component list + directed relationships + summary |
+| Add element | Modify/Add Element | New element id + position + confirmation |
+| Create new diagram | Create New Diagram | File path + component count + bulleted list |
+| Compare two diagrams | Compare Two Diagrams | Set differences + relationship deltas |
 
-## Token Analysis (Why This Matters)
+## Token Reality Check
 
-Real data from baseline testing:
+| Scenario | Without Delegation | With Delegation |
+|----------|--------------------|-----------------|
+| Single large file (79 elements) | 22k tokens (45% of 50k budget) | ~500 tokens |
+| 7-diagram project survey | 67k tokens (33% of 200k budget) | ~2k tokens |
+| Two-file comparison | 18k tokens | ~800 tokens |
 
-| Scenario | Without Delegation | With Delegation | Savings |
-|----------|-------------------|-----------------|---------|
-| Single large file | 22k tokens (45% budget) | ~500 tokens (subagent summary) | 98% |
-| Two-file comparison | 18k tokens (9% budget) | ~800 tokens (diff summary) | 96% |
-| Modification task | 14k tokens (7% budget) | ~300 tokens (confirmation) | 98% |
-
-**Context pollution impact:**
-- Reading all 7 project diagrams: 67k tokens (33% of 200k budget)
-- With delegation: ~2k tokens (isolated in subagents)
-- **Savings: 97% context budget preserved**
-
-## Implementation Example
-
-**❌ BAD (Direct Read):**
-```
-User: "What architecture is shown in detailed-architecture.excalidraw.json?"
-Agent: Let me read that file... [reads 22k tokens into main context]
-```
-
-**✅ GOOD (Subagent Delegation):**
-```
-User: "What architecture is shown in detailed-architecture.excalidraw.json?"
-Agent: I'll use a subagent to extract the architecture details.
-
-[Dispatches Task tool with general-purpose subagent]
-Task: Extract and explain components in .ryanquinn3/ticketing/detailed-architecture.excalidraw.json
-
-[Receives ~500 token summary with component list and relationships]
-[Responds to user with architecture explanation, main context preserved]
-```
-
-## Why "Straightforward JSON" Doesn't Matter
-
-Agents often rationalize: "The format is simple, I can just read it."
-
-**The problem isn't complexity - it's verbosity:**
-- Simple structure with 20+ properties per element
-- Repetitive metadata (seed, version, nonce, roughness)
-- Positioning data (x, y, width, height) not semantically useful
-- Visual styling (strokeColor, opacity, fillStyle) irrelevant to content
-
-**Token cost comes from volume, not complexity.**
-
-Even "straightforward" JSON consumes 4k-22k tokens because:
-- 79 elements × ~280 tokens/element = 22k tokens
-- Most tokens are metadata noise
-- Only text labels and relationships matter (~10% of content)
-
-## The Iron Law
-
-**Main agents NEVER read Excalidraw files. No exceptions.**
-
-Not for:
-- "Quick checks"
-- "Small files"
-- "Understanding format"
-- "One-time analysis"
-- "Optimal efficiency"
-
-**Always delegate. Isolation is free via subagents.**
+**The Iron Law: Main agents NEVER read Excalidraw files. Delegation is not optional.**

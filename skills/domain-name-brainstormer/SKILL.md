@@ -1,212 +1,79 @@
 ---
 name: domain-name-brainstormer
-description: Generates creative domain name ideas for your project and checks availability across multiple TLDs (.com, .io, .dev, .ai, etc.). Saves hours of brainstorming and manual checking.
+description: Brainstorm and evaluate domain name candidates using phonaesthetics, trademark risk tiers, and TLD selection frameworks. Use when naming a startup, product, or brand — outputs a scored shortlist with radio-test results. Trigger phrases: "suggest domain names", "help me name my", "find a domain for", "domain brainstorm", "domain candidates".
 ---
 
 # Domain Name Brainstormer
 
-This skill helps you find the perfect domain name for your project by generating creative options and checking what's actually available to register.
+## Mindset
 
-## When to Use This Skill
+- **Distinctiveness is the primary constraint, not descriptiveness.** Generic descriptive names (.com almost certainly taken, trademark unregisterable). The best names are invented or out-of-field.
+- **Phonaesthetics predict memorability better than meaning.** A name that "snaps" when spoken (plosive consonants, front-stressed, 1–2 syllables) survives word-of-mouth better than a perfectly descriptive one.
+- **TLD choice signals audience, not just availability.** .com signals mainstream/trust; .dev signals developer tool; .ai signals the AI is the product (not a feature). Picking the wrong TLD causes brand positioning damage, not just aesthetics.
+- **Most "good" .coms are taken or premium-priced.** The real deliverable is a shortlist that maximizes likelihood of availability — invented words, portmanteaus, out-of-field vocabulary.
+- **Trademark risk is non-negotiable to surface.** A creative name that infringes Class 42 (software/SaaS) is worse than no name — it causes forced rebrand after launch.
 
-- Starting a new project or company
-- Launching a product or service
-- Creating a personal brand or portfolio site
-- Rebranding an existing project
-- Registering a domain for a side project
-- Finding available alternatives when your first choice is taken
+## Navigation
 
-## What This Skill Does
+**Use this skill when**: user needs domain name candidates for a startup, product, personal brand, or side project; user wants to evaluate name options they already have; user needs TLD guidance.
 
-1. **Understands Your Project**: Analyzes what you're building and who it's for
-2. **Generates Creative Names**: Creates relevant, memorable domain options
-3. **Checks Availability**: Verifies which domains are actually available across multiple TLDs
-4. **Multiple Extensions**: Suggests .com, .io, .dev, .ai, .app, and more
-5. **Provides Alternatives**: Offers variations if top choices are taken
-6. **Branding Insights**: Explains why certain names work well
+**Do NOT use this skill when**: user needs live availability checking (Claude has no WHOIS/DNS access — that is always the user's next step at a registrar); user needs legal trademark clearance (surface risk tier, but defer to trademark attorney for Tier 2+).
 
-## How to Use
-
-### Basic Brainstorming
-
+**Ambiguous input decision tree**:
 ```
-I'm building a project management tool for remote teams. 
-Suggest domain names.
+Is the product category clear?
+  NO → ask: "What does it do and who is the primary user?"
+  YES → Is the target audience global non-tech?
+          YES → constrain output to .com only
+          NO → use TLD decision tree (see references/naming-frameworks.md)
 ```
 
-```
-Help me brainstorm domain names for a personal finance app
-```
+## Philosophy
 
-### Specific Preferences
+Strong domain names are invented assets, not discovered ones. The workflow is: generate phonaesthetically strong candidates → score them → eliminate trademark risk → output a ranked shortlist with radio-test results. Availability is the user's verification step, never Claude's claim.
 
-```
-I need a domain name for my AI writing assistant. 
-Prefer short names with .ai or .io extension.
-```
+## NEVER
 
-### With Keywords
+- NEVER present any domain as available, registered, or taken — Claude has no WHOIS, DNS, or registrar access. Say "candidate" not "available".
+- NEVER suggest single common English words on .com without flagging "almost certainly taken or premium-priced ($500–$50,000+)" — these look like options but are traps that waste the user's time.
+- NEVER skip trademark risk classification — a name that infringes an existing SaaS trademark causes forced rebrand after launch, which costs orders of magnitude more than the domain.
+- NEVER recommend hyphens as a "workaround" for taken names — hyphens fail the radio test completely (users say "go to code dash box dot com?" and navigate wrong), and they signal spam to email filters.
+- NEVER suggest names with embedded numbers as primary choices — "4ward", "2fast" — they fail the radio test (is it the digit or the word?) and look amateurish on business cards.
+- NEVER recommend .xyz as a serious primary TLD to non-tech audiences — it carries strong spam/scam association from bulk registrations; it signals "cheap placeholder" to anyone over 30.
+- NEVER recommend country-code hacks (.ly, .me as word suffixes) as a primary domain without flagging country policy risk — Libya (.ly) has blocked/revoked domains for content violations; Bit.ly would be inaccessible if repeated.
 
-```
-Suggest domain names using the words "pixel" or "studio" 
-for my design agency
-```
+## Output Format
 
-## Example
+For each session, produce:
 
-**User**: "I'm building a tool for developers to share code snippets. Suggest creative domain names."
+**1. Analysis** (2–3 lines): category, audience, naming constraints surfaced.
 
-**Output**:
-```
-Analyzing your project...
-Target audience: Developers
-Key features: Code sharing, snippets, collaboration
+**2. Candidates table** (10–15 names):
+| Candidate | Pattern | Phonaesthetic Score /15 | Trademark Risk | Radio Test |
+|-----------|---------|------------------------|----------------|------------|
+| stripe.dev | dictionary/out-of-field | 14 | Tier 2 — verify class | PASS |
 
-🎯 Domain Name Suggestions
+**3. Top 3 with reasoning**: why each works across distinctiveness, memorability, and brand fit.
 
-## Available (.com)
-1. ✓ snippetbox.com - Clear, memorable, available!
-   Why: Directly describes the product, easy to remember
+**4. Next steps** (always): "Verify candidates at Namecheap/GoDaddy/Porkbun. Check trademark at USPTO TESS (tess.uspto.gov) for Tier 2+ names."
 
-2. ✓ codeclip.com - Short and snappy
-   Why: Implies quick code sharing, only 8 characters
+## Naming Frameworks
 
-3. ✓ devpaste.com - Developer-focused
-   Why: Familiar to devs (like pastebin), clear purpose
+See `references/naming-frameworks.md` for:
+- Phonaesthetic scoring rubric (5 axes)
+- Trademark risk tier definitions (Tier 1–4)
+- TLD selection decision tree
+- Word construction patterns ranked by distinctiveness
+- Radio test protocol
+- Squatter pattern recognition
+- Negative space naming technique
 
-## Available (Alternative TLDs)
-4. ✓ snippet.dev - Perfect extension for developers
-   Why: .dev extension signals developer tool
+## When Things Go Wrong
 
-5. ✓ codebox.io - Tech-forward
-   Why: .io popular with tech startups, clean name
-
-6. ✓ sharecode.app - Descriptive
-   Why: .app extension, clearly states the action
-
-## Premium/Taken (.com)
-- codeshare.com (Taken, est. $2,500)
-- snippets.com (Taken, premium domain)
-
-## Recommendations
-
-🏆 Top Pick: snippet.dev
-- Perfect for developer audience
-- Short and memorable  
-- .dev extension adds credibility
-- Available now!
-
-🥈 Runner-up: snippetbox.com
-- .com is universally recognized
-- Slightly longer but descriptive
-- Great brandability
-
-Next steps:
-1. Register your favorite before someone else does!
-2. Want me to check more variations?
-3. Need help with logo ideas for these names?
-```
-
-**Inspired by:** Ben Aiad's use case from Lenny's Newsletter
-
-## Domain Naming Tips
-
-### What Makes a Good Domain
-
-✓ **Short**: Under 15 characters ideal
-✓ **Memorable**: Easy to recall and spell
-✓ **Pronounceable**: Can be said in conversation
-✓ **Descriptive**: Hints at what you do
-✓ **Brandable**: Unique enough to stand out
-✓ **No hyphens**: Easier to share verbally
-
-### TLD Guide
-
-- **.com**: Universal, trusted, great for businesses
-- **.io**: Tech startups, developer tools
-- **.dev**: Developer-focused products
-- **.ai**: AI/ML products
-- **.app**: Mobile or web applications
-- **.co**: Alternative to .com
-- **.xyz**: Modern, creative projects
-- **.design**: Creative/design agencies
-- **.tech**: Technology companies
-
-## Advanced Features
-
-### Check Similar Variations
-
-```
-Check availability for "codebase" and similar variations 
-across .com, .io, .dev
-```
-
-### Industry-Specific
-
-```
-Suggest domain names for a sustainable fashion brand, 
-checking .eco and .fashion TLDs
-```
-
-### Multilingual Options
-
-```
-Brainstorm domain names in English and Spanish for 
-a language learning app
-```
-
-### Competitor Analysis
-
-```
-Show me domain patterns used by successful project 
-management tools, then suggest similar available ones
-```
-
-## Example Workflows
-
-### Startup Launch
-1. Describe your startup idea
-2. Get 10-15 domain suggestions across TLDs
-3. Review availability and pricing
-4. Pick top 3 favorites
-5. Register immediately
-
-### Personal Brand
-1. Share your name and profession
-2. Get variations (firstname.com, firstnamelastname.dev, etc.)
-3. Check social media handle availability too
-4. Register consistent brand across platforms
-
-### Product Naming
-1. Describe product and target market
-2. Get creative, brandable names
-3. Check trademark conflicts
-4. Verify domain and social availability
-5. Test names with target audience
-
-## Tips for Success
-
-1. **Act Fast**: Good domains get taken quickly
-2. **Register Variations**: Get .com and .io to protect brand
-3. **Avoid Numbers**: Hard to communicate verbally
-4. **Check Social Media**: Make sure @username is available too
-5. **Say It Out Loud**: Test if it's easy to pronounce
-6. **Check Trademarks**: Ensure no legal conflicts
-7. **Think Long-term**: Will it still make sense in 5 years?
-
-## Pricing Context
-
-When suggesting domains, I'll note:
-- Standard domains: ~$10-15/year
-- Premium TLDs (.io, .ai): ~$30-50/year
-- Taken domains: Market price if listed
-- Premium domains: $hundreds to $thousands
-
-## Related Tools
-
-After picking a domain:
-- Check logo design options
-- Verify social media handles
-- Research trademark availability
-- Plan brand identity colors/fonts
-
+| Situation | Likely Cause | Recovery |
+|-----------|-------------|----------|
+| User says "all my candidates are taken" | Suggestions leaned on common words + .com | Pivot to portmanteau/invented words; offer .io/.dev alternatives; ask what budget they have for premium .com |
+| User wants a .com of a two-word phrase | Almost certainly parked or $1,000+ | Acknowledge directly; generate portmanteau alternatives + offer .io/.dev at $10–15/yr |
+| User has a name and wants domain variants | Don't re-brainstorm — evaluate the name they have | Run phonaesthetic score + trademark risk + radio test on their name; suggest TLD variants |
+| User wants to know if a specific domain is available | Claude cannot check | Say clearly: "I can't check availability — go to porkbun.com or namecheap.com and search directly." |
+| User's project is AI-related and they want .ai | Surface cost ($60–100/yr, Anguilla registry) and policy risk | Recommend .ai only if AI is the core product, not a feature; offer .dev as fallback |
