@@ -678,6 +678,24 @@
       ]
     },
     {
+      "name": "x-twitter-source-packets",
+      "description": "Build traceable public X/Twitter source packets for research, launch, support, or content work. Use when users need tweet evidence, public replies, follower context, social proof, or TweetClaw before drafting.",
+      "source": "./dist/plugins/x-twitter-source-packets",
+      "strict": false,
+      "skills": [
+        "./skills/x-twitter-source-packets"
+      ],
+      "category": "utilities",
+      "keywords": [
+        "utilities",
+        "twitter",
+        "x",
+        "source-evidence",
+        "social-media",
+        "tweetclaw"
+      ]
+    },
+    {
       "name": "web-to-markdown",
       "description": "Converts webpage URLs to clean Markdown by calling the local web2md CLI (Puppeteer + Readability), suitable for JS-rendered pages.",
       "source": "./dist/plugins/web-to-markdown",
