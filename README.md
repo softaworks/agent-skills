@@ -86,6 +86,24 @@ You can also **Enable auto-update** to get the latest versions automatically.
 cp -r skills/<skill-name> ~/.claude/skills/
 ```
 
+**For Autohand Code (Manual)** — Skills only
+
+```bash
+git clone https://github.com/softaworks/agent-toolkit.git
+mkdir -p ~/.autohand/skills
+cp -r agent-toolkit/skills/<skill-name> ~/.autohand/skills/
+```
+
+For the current project:
+
+```bash
+git clone https://github.com/softaworks/agent-toolkit.git
+mkdir -p .autohand/skills
+cp -r agent-toolkit/skills/<skill-name> .autohand/skills/
+```
+
+If a skill is later published to an Autohand Skills index, install it with `autohand --skill-install <skill-name>`, or add `--project` to install it into the current project.
+
 **For claude.ai** — Skills only
 
 Add skills to project knowledge or paste SKILL.md contents into the conversation.
