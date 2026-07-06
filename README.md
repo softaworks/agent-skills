@@ -131,6 +131,7 @@ Add skills to project knowledge or paste SKILL.md contents into the conversation
 | 👔 Professional | [difficult-workplace-conversations](skills/difficult-workplace-conversations/README.md) | Navigate difficult conversations |
 | 👔 Professional | [feedback-mastery](skills/feedback-mastery/README.md) | Deliver constructive feedback |
 | 👔 Professional | [professional-communication](skills/professional-communication/README.md) | Technical communication guide |
+| 🧪 Testing | [agent-safety-preflight](skills/agent-safety-preflight/README.md) | Repo safety receipt before AI coding agents get tool access |
 | 🧪 Testing | [qa-test-planner](skills/qa-test-planner/README.md) | Comprehensive QA test planning |
 | 📦 Git | [commit-work](skills/commit-work/README.md) | High-quality git commits |
 | 🔧 Utilities | [datadog-cli](skills/datadog-cli/README.md) | Debug with Datadog logs & metrics |
