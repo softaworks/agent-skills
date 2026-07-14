@@ -120,6 +120,7 @@ Add skills to project knowledge or paste SKILL.md contents into the conversation
 | 🛠️ Development | [database-schema-designer](skills/database-schema-designer/README.md) | Design robust database schemas |
 | 🛠️ Development | [dependency-updater](skills/dependency-updater/README.md) | Smart dependency management |
 | 🛠️ Development | [naming-analyzer](skills/naming-analyzer/README.md) | Suggest better variable/function names |
+| 🛠️ Development | [ontoly-software-graph](skills/ontoly-software-graph/README.md) | Graph-backed architecture, request tracing, dependency, and impact analysis |
 | 🛠️ Development | [lesson-learned](skills/lesson-learned/README.md) | Extract SE lessons from recent code changes |
 | 🛠️ Development | [reducing-entropy](skills/reducing-entropy/README.md) | Minimize codebase size |
 | 🛠️ Development | [session-handoff](skills/session-handoff/README.md) | Seamless AI session transfers |

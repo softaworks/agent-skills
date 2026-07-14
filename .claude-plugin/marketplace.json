@@ -60,6 +60,24 @@
       ]
     },
     {
+      "name": "ontoly-software-graph",
+      "description": "Use Ontoly's deterministic Software Graph and MCP capabilities for architecture review, request tracing, dependency analysis, and impact analysis.",
+      "source": "./dist/plugins/ontoly-software-graph",
+      "strict": false,
+      "skills": [
+        "./skills/ontoly-software-graph"
+      ],
+      "category": "development",
+      "keywords": [
+        "architecture",
+        "software-graph",
+        "mcp",
+        "dependencies",
+        "impact-analysis",
+        "ontoly"
+      ]
+    },
+    {
       "name": "agent-md-refactor",
       "description": "Refactor bloated AGENTS.md, CLAUDE.md, or similar agent instruction files to follow progressive disclosure principles. Splits monolithic files into organized, linked documentation.",
       "source": "./dist/plugins/agent-md-refactor",
