@@ -60,6 +60,22 @@
       ]
     },
     {
+      "name": "minimax",
+      "description": "Configure MiniMax text models, regional API endpoints, capabilities, thinking behavior, and token pricing.",
+      "source": "./dist/plugins/minimax",
+      "strict": false,
+      "skills": [
+        "./skills/minimax"
+      ],
+      "category": "ai-tools",
+      "keywords": [
+        "ai",
+        "minimax",
+        "regional-endpoints",
+        "model-configuration"
+      ]
+    },
+    {
       "name": "agent-md-refactor",
       "description": "Refactor bloated AGENTS.md, CLAUDE.md, or similar agent instruction files to follow progressive disclosure principles. Splits monolithic files into organized, linked documentation.",
       "source": "./dist/plugins/agent-md-refactor",
