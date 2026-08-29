@@ -60,6 +60,25 @@
       ]
     },
     {
+      "name": "hermes-tweet",
+      "description": "Use Hermes Agent with Xquik for X/Twitter search, social listening, account reads, trend checks, and approval-gated posting or account actions.",
+      "source": "./dist/plugins/hermes-tweet",
+      "strict": false,
+      "skills": [
+        "./skills/hermes-tweet"
+      ],
+      "category": "ai-tools",
+      "keywords": [
+        "ai",
+        "hermes-agent",
+        "xquik",
+        "twitter",
+        "x",
+        "social-media",
+        "automation"
+      ]
+    },
+    {
       "name": "agent-md-refactor",
       "description": "Refactor bloated AGENTS.md, CLAUDE.md, or similar agent instruction files to follow progressive disclosure principles. Splits monolithic files into organized, linked documentation.",
       "source": "./dist/plugins/agent-md-refactor",
