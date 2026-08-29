@@ -98,6 +98,7 @@ Add skills to project knowledge or paste SKILL.md contents into the conversation
 |----------|-------|-------------|
 | 🤖 AI Tools | [codex](skills/codex/README.md) | Advanced code analysis with GPT-5.2 |
 | 🤖 AI Tools | [gemini](skills/gemini/README.md) | Large-scale review (200k+ context) |
+| 🤖 AI Tools | [hermes-tweet](skills/hermes-tweet/README.md) | Hermes Agent X/Twitter automation |
 | 🤖 AI Tools | [perplexity](skills/perplexity/README.md) | Web search & research |
 | 🔮 Meta | [agent-md-refactor](skills/agent-md-refactor/README.md) | Refactor bloated agent instruction files |
 | 🔮 Meta | [command-creator](skills/command-creator/README.md) | Create Claude Code slash commands |
