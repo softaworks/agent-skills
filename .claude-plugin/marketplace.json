@@ -662,6 +662,23 @@
       ]
     },
     {
+      "name": "humanizer-pl",
+      "description": "Remove signs of AI-generated writing from Polish text. Use when editing or reviewing Polish-language text to make it sound natural and human-written, including Polish typography fixes.",
+      "source": "./dist/plugins/humanizer-pl",
+      "strict": false,
+      "skills": [
+        "./skills/humanizer-pl"
+      ],
+      "category": "utilities",
+      "keywords": [
+        "utilities",
+        "writing",
+        "ai-detection",
+        "editing",
+        "polish"
+      ]
+    },
+    {
       "name": "meme-factory",
       "description": "Generate memes using the memegen.link API. Use when users request memes, want to add humor to content, or need visual aids for social media.",
       "source": "./dist/plugins/meme-factory",
