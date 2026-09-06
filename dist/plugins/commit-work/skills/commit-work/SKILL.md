@@ -11,6 +11,8 @@ Make commits that are easy to review and safe to ship:
 - commits are logically scoped (split when needed)
 - commit messages describe what changed and why
 
+If the repository states its own commit rules (AGENTS.md or CLAUDE.md, often under "Commit Discipline"), those take precedence over this skill.
+
 ## Inputs to ask for (if missing)
 - Single commit or multiple commits? (If unsure: default to multiple small commits when there are unrelated changes.)
 - Commit style: Conventional Commits are required.
@@ -23,10 +25,11 @@ Make commits that are easy to review and safe to ship:
    - If many changes: `git diff --stat`
 2) Decide commit boundaries (split if needed)
    - Split by: feature vs refactor, backend vs frontend, formatting vs logic, tests vs prod code, dependency bumps vs behavior changes.
-   - If changes are mixed in one file, plan to use patch staging.
+   - If unrelated changes are mixed in one file, commit one concern first and the next afterwards; a file cannot be split non-interactively.
 3) Stage only what belongs in the next commit
-   - Prefer patch staging for mixed changes: `git add -p`
-   - To unstage a hunk/file: `git restore --staged -p` or `git restore --staged <path>`
+   - Stage explicit paths: `git add <path> ...`. Avoid `git add .` and `git add -A`, which sweep in unrelated work.
+   - To unstage: `git restore --staged <path>`
+   - `git add -p` and `git restore --staged -p` are interactive; an agent cannot drive them. If a file genuinely needs hunk-level splitting, hand that step to the human.
 4) Review what will actually be committed
    - `git diff --cached`
    - Sanity checks:
@@ -42,7 +45,7 @@ Make commits that are easy to review and safe to ship:
      - blank line
      - body (what/why, not implementation diary)
      - footer (BREAKING CHANGE) if needed
-   - Prefer an editor for multi-line messages: `git commit -v`
+   - For multi-line messages, supply the body directly — `git commit -F -` with a heredoc, or repeated `-m` flags. `git commit -v` opens an editor an agent cannot use.
    - Use `references/commit-message-template.md` if helpful.
 7) Run the smallest relevant verification
    - Run the repo's fastest meaningful check (unit tests, lint, or build) before moving on.
